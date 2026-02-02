@@ -1538,13 +1538,16 @@ dependencies = [
 name = "leptos-store"
 version = "0.2.0"
 dependencies = [
+ "base64",
  "futures",
+ "js-sys",
  "leptos",
  "pin-project-lite",
  "serde",
  "serde_json",
  "thiserror 2.0.17",
  "tokio",
+ "tracing",
  "wasm-bindgen",
  "wasm-bindgen-test",
  "web-sys",
