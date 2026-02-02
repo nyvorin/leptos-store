@@ -45,8 +45,8 @@ pub fn App() -> impl IntoView {
     // On hydrate (client): Read from hydration script and provide to context
     #[cfg(feature = "hydrate")]
     {
-        use leptos_store::hydration::{has_hydration_data, read_hydration_data};
         use crate::auth_store::AuthState;
+        use leptos_store::hydration::{has_hydration_data, read_hydration_data};
 
         // Try to hydrate from server-rendered data
         if has_hydration_data("auth_store") {
