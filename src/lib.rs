@@ -140,6 +140,40 @@ pub mod store;
 #[cfg(feature = "hydrate")]
 pub mod hydration;
 
+// New modules for extended functionality
+#[cfg(feature = "middleware")]
+#[cfg_attr(docsrs, doc(cfg(feature = "middleware")))]
+pub mod middleware;
+
+#[cfg(feature = "devtools")]
+#[cfg_attr(docsrs, doc(cfg(feature = "devtools")))]
+pub mod devtools;
+
+#[cfg(any(
+    feature = "persist-web",
+    feature = "persist-idb",
+    feature = "persist-server"
+))]
+#[cfg_attr(
+    docsrs,
+    doc(cfg(any(
+        feature = "persist-web",
+        feature = "persist-idb",
+        feature = "persist-server"
+    )))
+)]
+pub mod persistence;
+
+pub mod composition;
+
+#[cfg(feature = "server-actions")]
+#[cfg_attr(docsrs, doc(cfg(feature = "server-actions")))]
+pub mod server;
+
+#[cfg(feature = "templates")]
+#[cfg_attr(docsrs, doc(cfg(feature = "templates")))]
+pub mod templates;
+
 pub mod prelude;
 
 pub use prelude::*;
