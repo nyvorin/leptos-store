@@ -7,9 +7,10 @@
 
 use leptos::prelude::*;
 use leptos_store::store::Store;
+use serde::Serialize;
 
 /// Counter state.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct CounterState {
     pub count: i32,
     pub history: Vec<i32>,
