@@ -627,17 +627,52 @@ impl EventSubscriber for DevtoolsEventSubscriber {
 #[component]
 pub fn StoreInspector(
     /// Whether collapsed by default.
-    #[prop(optional, default = true)]
+    #[prop(optional, default = false)]
     collapsed: bool,
     /// Maximum events to show.
-    #[prop(optional, default = 50)]
+    #[prop(optional, default = 100)]
     max_events: usize,
 ) -> impl IntoView {
     let is_collapsed = RwSignal::new(collapsed);
     let selected_store = RwSignal::new(Option::<String>::None);
+    let selected_event = RwSignal::new(Option::<usize>::None);
     let events = RwSignal::new(Vec::<DevtoolsEvent>::new());
+    let active_tab = RwSignal::new("state"); // "state" or "events"
+    let refresh_counter = RwSignal::new(0u32);
 
-    // Update events periodically
+    // Get store list reactively
+    let stores = move || {
+        let _ = refresh_counter.get(); // Track refreshes
+        get_devtools_state()
+            .map(|s| s.stores.values().cloned().collect::<Vec<_>>())
+            .unwrap_or_default()
+    };
+
+    // Auto-select first store if none selected
+    Effect::new(move |_| {
+        if selected_store.get().is_none() {
+            if let Some(first) = stores().first() {
+                selected_store.set(Some(first.key.clone()));
+            }
+        }
+    });
+
+    // Get current state for selected store (reactive via thread_local on WASM)
+    #[cfg(target_arch = "wasm32")]
+    let get_current_state = move || -> Option<String> {
+        let _ = refresh_counter.get(); // Track refreshes
+        let key = selected_store.get()?;
+        STATE_GETTERS.with(|getters| {
+            getters.borrow().get(&key).map(|getter| getter())
+        })
+    };
+    
+    #[cfg(not(target_arch = "wasm32"))]
+    let get_current_state = move || -> Option<String> {
+        None
+    };
+
+    // Update events
     let update_events = move || {
         if let Some(state) = get_devtools_state() {
             events.set(
@@ -650,95 +685,436 @@ pub fn StoreInspector(
                     .collect(),
             );
         }
+        refresh_counter.update(|c| *c = c.wrapping_add(1));
     };
 
-    // Get store list
-    let stores = move || {
-        get_devtools_state()
-            .map(|s| s.stores.values().cloned().collect::<Vec<_>>())
-            .unwrap_or_default()
-    };
+    // Auto-refresh events on tab switch
+    Effect::new(move |_| {
+        if active_tab.get() == "events" {
+            update_events();
+        }
+    });
 
+    // CSS styles as a const for cleaner code
+    const PANEL_STYLE: &str = "position: fixed; bottom: 0; right: 0; z-index: 99999; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace; font-size: 13px; width: 500px; max-height: 70vh; display: flex; flex-direction: column; box-shadow: -2px -2px 10px rgba(0,0,0,0.3); border-radius: 8px 0 0 0;";
+    const HEADER_STYLE: &str = "background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #fff; padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 0 0 0; user-select: none;";
+    const TAB_STYLE: &str = "background: #1f2937; display: flex; border-bottom: 1px solid #374151;";
+    const TAB_BTN_STYLE: &str = "flex: 1; padding: 10px; border: none; cursor: pointer; font-size: 13px; transition: all 0.2s;";
+    const CONTENT_STYLE: &str = "background: #111827; color: #e5e7eb; flex: 1; overflow: auto; min-height: 300px;";
+    
     view! {
         <div
             class="leptos-store-inspector"
-            style="position: fixed; bottom: 20px; right: 20px; z-index: 99999; font-family: monospace; font-size: 12px;"
+            style=move || if is_collapsed.get() {
+                "position: fixed; bottom: 20px; right: 20px; z-index: 99999;"
+            } else {
+                PANEL_STYLE
+            }
         >
             // Header bar
             <div
-                style="background: #1e1e1e; color: #fff; padding: 8px 12px; border-radius: 4px 4px 0 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center;"
+                style=HEADER_STYLE
                 on:click=move |_| is_collapsed.update(|c| *c = !*c)
             >
-                <span>"🔍 Store Inspector"</span>
-                <span>{move || if is_collapsed.get() { "▲" } else { "▼" }}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 16px;">"🔍"</span>
+                    <span style="font-weight: 600;">"Leptos Store Inspector"</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 11px; color: #9ca3af;">
+                        {move || format!("{} store(s)", stores().len())}
+                    </span>
+                    <span style="font-size: 18px;">{move || if is_collapsed.get() { "◀" } else { "▼" }}</span>
+                </div>
             </div>
 
             // Content panel
             <Show when=move || !is_collapsed.get()>
-                <div style="background: #2d2d2d; color: #fff; padding: 12px; border-radius: 0 0 4px 4px; max-width: 400px; max-height: 300px; overflow: auto;">
-                    // Stores section
-                    <div style="margin-bottom: 12px;">
-                        <div style="color: #888; margin-bottom: 4px;">"Stores"</div>
-                        <div style="padding-left: 8px;">
-                            {move || {
-                                stores()
-                                    .into_iter()
-                                    .map(|store| {
-                                        let key = store.key.clone();
-                                        view! {
-                                            <div
-                                                style="padding: 2px 0; cursor: pointer; color: #4fc3f7;"
-                                                on:click=move |_| selected_store.set(Some(key.clone()))
-                                            >
-                                                {store.key.clone()}
-                                            </div>
+                // Tab bar
+                <div style=TAB_STYLE>
+                    <button
+                        style=move || format!(
+                            "{} background: {}; color: {};",
+                            TAB_BTN_STYLE,
+                            if active_tab.get() == "state" { "#374151" } else { "transparent" },
+                            if active_tab.get() == "state" { "#60a5fa" } else { "#9ca3af" }
+                        )
+                        on:click=move |_| active_tab.set("state")
+                    >
+                        "📊 State"
+                    </button>
+                    <button
+                        style=move || format!(
+                            "{} background: {}; color: {};",
+                            TAB_BTN_STYLE,
+                            if active_tab.get() == "events" { "#374151" } else { "transparent" },
+                            if active_tab.get() == "events" { "#60a5fa" } else { "#9ca3af" }
+                        )
+                        on:click=move |_| { active_tab.set("events"); update_events(); }
+                    >
+                        "📜 Events"
+                        <span style="margin-left: 6px; background: #4b5563; padding: 2px 6px; border-radius: 10px; font-size: 11px;">
+                            {move || events.get().len()}
+                        </span>
+                    </button>
+                </div>
+
+                <div style=CONTENT_STYLE>
+                    // State Tab
+                    <Show when=move || active_tab.get() == "state">
+                        <div style="display: flex; height: 100%;">
+                            // Store list sidebar
+                            <div style="width: 140px; border-right: 1px solid #374151; padding: 8px 0; overflow-y: auto;">
+                                <div style="padding: 4px 12px; color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    "Stores"
+                                </div>
+                                {move || {
+                                    stores()
+                                        .into_iter()
+                                        .map(|store| {
+                                            let key = store.key.clone();
+                                            let key2 = store.key.clone();
+                                            let is_selected = move || selected_store.get().as_ref() == Some(&key);
+                                            view! {
+                                                <div
+                                                    style=move || format!(
+                                                        "padding: 8px 12px; cursor: pointer; transition: all 0.15s; {}",
+                                                        if is_selected() { "background: #374151; color: #60a5fa;" } else { "color: #d1d5db;" }
+                                                    )
+                                                    on:click=move |_| {
+                                                        selected_store.set(Some(key2.clone()));
+                                                        refresh_counter.update(|c| *c = c.wrapping_add(1));
+                                                    }
+                                                >
+                                                    {store.key.clone()}
+                                                </div>
+                                            }
+                                        })
+                                        .collect_view()
+                                }}
+                            </div>
+
+                            // State viewer
+                            <div style="flex: 1; padding: 12px; overflow: auto;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                    <span style="color: #9ca3af; font-size: 11px;">
+                                        {move || selected_store.get().unwrap_or_else(|| "No store selected".to_string())}
+                                    </span>
+                                    <button
+                                        style="background: #374151; border: none; color: #9ca3af; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;"
+                                        on:click=move |_| refresh_counter.update(|c| *c = c.wrapping_add(1))
+                                    >
+                                        "↻ Refresh"
+                                    </button>
+                                </div>
+                                
+                                // State tree
+                                <div style="font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 12px; line-height: 1.6;">
+                                    {move || {
+                                        match get_current_state() {
+                                            Some(state_str) => {
+                                                // Check if JSON or Debug format
+                                                if let Some(json_str) = state_str.strip_prefix("JSON:") {
+                                                    view! { <JsonTreeView json=json_str.to_string() /> }.into_any()
+                                                } else {
+                                                    // Debug format - render as preformatted
+                                                    view! {
+                                                        <pre style="margin: 0; white-space: pre-wrap; word-break: break-word; color: #a5b4fc;">
+                                                            {state_str}
+                                                        </pre>
+                                                    }.into_any()
+                                                }
+                                            }
+                                            None => view! {
+                                                <div style="color: #6b7280; text-align: center; padding: 40px;">
+                                                    "Select a store to view its state"
+                                                </div>
+                                            }.into_any()
                                         }
-                                    })
-                                    .collect_view()
+                                    }}
+                                </div>
+                            </div>
+                        </div>
+                    </Show>
+
+                    // Events Tab
+                    <Show when=move || active_tab.get() == "events">
+                        <div style="display: flex; height: 100%;">
+                            // Event list
+                            <div style="width: 200px; border-right: 1px solid #374151; overflow-y: auto;">
+                                {move || {
+                                    events
+                                        .get()
+                                        .into_iter()
+                                        .enumerate()
+                                        .map(|(idx, event)| {
+                                            let is_selected = move || selected_event.get() == Some(idx);
+                                            let (color, icon) = match event.event_type.as_str() {
+                                                "StateChanged" => ("#fbbf24", "⚡"),
+                                                "StoreRegistered" => ("#34d399", "📦"),
+                                                "MutationStarted" => ("#60a5fa", "▶"),
+                                                "MutationCompleted" => ("#34d399", "✓"),
+                                                "ActionDispatched" => ("#a78bfa", "→"),
+                                                "ActionCompleted" => ("#34d399", "✓"),
+                                                "Error" => ("#f87171", "✕"),
+                                                _ => ("#9ca3af", "•"),
+                                            };
+                                            let store_name = event.store_name.clone().unwrap_or_default();
+                                            let event_type = event.event_type.clone();
+                                            view! {
+                                                <div
+                                                    style=move || format!(
+                                                        "padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #1f2937; transition: all 0.15s; {}",
+                                                        if is_selected() { "background: #374151;" } else { "" }
+                                                    )
+                                                    on:click=move |_| selected_event.set(Some(idx))
+                                                >
+                                                    <div style=format!("color: {}; font-size: 12px; display: flex; align-items: center; gap: 6px;", color)>
+                                                        <span>{icon}</span>
+                                                        <span>{event_type.clone()}</span>
+                                                    </div>
+                                                    <div style="color: #6b7280; font-size: 11px; margin-top: 2px;">
+                                                        {store_name.clone()}
+                                                    </div>
+                                                </div>
+                                            }
+                                        })
+                                        .collect_view()
+                                }}
+                            </div>
+
+                            // Event detail
+                            <div style="flex: 1; padding: 12px; overflow: auto;">
+                                {move || {
+                                    match selected_event.get() {
+                                        Some(idx) => {
+                                            let event = events.get().get(idx).cloned();
+                                            match event {
+                                                Some(e) => view! { <EventDetailView event=e /> }.into_any(),
+                                                None => view! {
+                                                    <div style="color: #6b7280; text-align: center; padding: 40px;">
+                                                        "Event not found"
+                                                    </div>
+                                                }.into_any()
+                                            }
+                                        }
+                                        None => view! {
+                                            <div style="color: #6b7280; text-align: center; padding: 40px;">
+                                                "Select an event to view details"
+                                            </div>
+                                        }.into_any()
+                                    }
+                                }}
+                            </div>
+                        </div>
+                    </Show>
+                </div>
+            </Show>
+        </div>
+    }
+}
+
+/// JSON tree viewer component for displaying state
+#[component]
+fn JsonTreeView(json: String) -> impl IntoView {
+    // Parse JSON and render as expandable tree
+    let parsed = serde_json::from_str::<serde_json::Value>(&json);
+    
+    match parsed {
+        Ok(value) => view! { <JsonValue value=value depth=0 /> }.into_any(),
+        Err(_) => view! {
+            <pre style="margin: 0; color: #f87171;">{format!("Invalid JSON: {}", json)}</pre>
+        }.into_any()
+    }
+}
+
+/// Recursive JSON value renderer
+#[component]
+fn JsonValue(value: serde_json::Value, depth: usize) -> impl IntoView {
+    let indent = depth * 16;
+    
+    match value {
+        serde_json::Value::Null => view! {
+            <span style="color: #6b7280;">"null"</span>
+        }.into_any(),
+        serde_json::Value::Bool(b) => view! {
+            <span style="color: #fbbf24;">{b.to_string()}</span>
+        }.into_any(),
+        serde_json::Value::Number(n) => view! {
+            <span style="color: #34d399;">{n.to_string()}</span>
+        }.into_any(),
+        serde_json::Value::String(s) => view! {
+            <span style="color: #fb923c;">"\""</span>
+            <span style="color: #fbbf24;">{s}</span>
+            <span style="color: #fb923c;">"\""</span>
+        }.into_any(),
+        serde_json::Value::Array(arr) => {
+            let is_expanded = RwSignal::new(depth < 2);
+            let len = arr.len();
+            let items = arr.clone();
+            view! {
+                <div>
+                    <span
+                        style="cursor: pointer; color: #9ca3af; user-select: none;"
+                        on:click=move |_| is_expanded.update(|e| *e = !*e)
+                    >
+                        {move || if is_expanded.get() { "▼ " } else { "▶ " }}
+                    </span>
+                    <span style="color: #60a5fa;">"["</span>
+                    <Show when=move || !is_expanded.get()>
+                        <span style="color: #6b7280;">{format!(" {} items ", len)}</span>
+                        <span style="color: #60a5fa;">"]"</span>
+                    </Show>
+                    <Show when=move || is_expanded.get()>
+                        <div style=format!("margin-left: {}px;", indent + 16)>
+                            {items.clone().into_iter().enumerate().map(|(i, item)| {
+                                view! {
+                                    <div style="display: flex;">
+                                        <span style="color: #6b7280; min-width: 24px;">{format!("{}:", i)}</span>
+                                        <JsonValue value=item depth=depth+1 />
+                                    </div>
+                                }
+                            }).collect_view()}
+                        </div>
+                        <span style="color: #60a5fa;">"]"</span>
+                    </Show>
+                </div>
+            }.into_any()
+        }
+        serde_json::Value::Object(obj) => {
+            let is_expanded = RwSignal::new(depth < 2);
+            let len = obj.len();
+            let entries: Vec<_> = obj.into_iter().collect();
+            let entries2 = entries.clone();
+            view! {
+                <div>
+                    <span
+                        style="cursor: pointer; color: #9ca3af; user-select: none;"
+                        on:click=move |_| is_expanded.update(|e| *e = !*e)
+                    >
+                        {move || if is_expanded.get() { "▼ " } else { "▶ " }}
+                    </span>
+                    <span style="color: #a78bfa;">"{"</span>
+                    <Show when=move || !is_expanded.get()>
+                        <span style="color: #6b7280;">{format!(" {} fields ", len)}</span>
+                        <span style="color: #a78bfa;">"}"</span>
+                    </Show>
+                    <Show when=move || is_expanded.get()>
+                        <div style=format!("margin-left: {}px;", indent + 16)>
+                            {entries2.clone().into_iter().map(|(key, val)| {
+                                view! {
+                                    <div style="display: flex; gap: 4px;">
+                                        <span style="color: #60a5fa;">"\""</span>
+                                        <span style="color: #93c5fd;">{key}</span>
+                                        <span style="color: #60a5fa;">"\":"</span>
+                                        <JsonValue value=val depth=depth+1 />
+                                    </div>
+                                }
+                            }).collect_view()}
+                        </div>
+                        <span style="color: #a78bfa;">"}"</span>
+                    </Show>
+                </div>
+            }.into_any()
+        }
+    }
+}
+
+/// Event detail view component
+#[component]
+fn EventDetailView(event: DevtoolsEvent) -> impl IntoView {
+    let payload_json: Option<serde_json::Value> = serde_json::from_str(&event.payload).ok();
+    
+    // Extract old/new values if present
+    let (old_value, new_value) = match &payload_json {
+        Some(serde_json::Value::Object(obj)) => {
+            (obj.get("old").cloned(), obj.get("new").cloned())
+        }
+        _ => (None, None)
+    };
+    
+    let has_diff = old_value.is_some() && new_value.is_some();
+    let raw_payload = event.payload.clone();
+    
+    view! {
+        <div style="font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 12px;">
+            // Event header
+            <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #374151;">
+                <div style="font-size: 14px; font-weight: 600; color: #f3f4f6; margin-bottom: 8px;">
+                    {event.event_type.clone()}
+                </div>
+                <div style="display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; color: #9ca3af; font-size: 11px;">
+                    <span>"Store:"</span>
+                    <span style="color: #60a5fa;">{event.store_name.clone().unwrap_or_else(|| "-".to_string())}</span>
+                    <span>"Time:"</span>
+                    <span>{format_timestamp(event.timestamp)}</span>
+                </div>
+            </div>
+            
+            // State diff view for StateChanged events
+            <Show when=move || has_diff>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    // Old value
+                    <div>
+                        <div style="color: #f87171; font-size: 11px; margin-bottom: 6px; font-weight: 600;">
+                            "← BEFORE"
+                        </div>
+                        <div style="background: #1f2937; padding: 8px; border-radius: 4px; border-left: 3px solid #f87171; overflow: auto; max-height: 200px;">
+                            {match old_value.clone() {
+                                Some(val) => view! { <JsonValue value=val depth=0 /> }.into_any(),
+                                None => view! { <span style="color: #6b7280;">"-"</span> }.into_any()
                             }}
                         </div>
                     </div>
-
-                    // Events section
+                    // New value
                     <div>
-                        <div style="color: #888; margin-bottom: 4px;">
-                            "Recent Events"
-                            <button
-                                style="margin-left: 8px; background: #444; border: none; color: #fff; padding: 2px 6px; border-radius: 2px; cursor: pointer;"
-                                on:click=move |_| update_events()
-                            >
-                                "Refresh"
-                            </button>
+                        <div style="color: #34d399; font-size: 11px; margin-bottom: 6px; font-weight: 600;">
+                            "→ AFTER"
                         </div>
-                        <div style="padding-left: 8px; max-height: 150px; overflow-y: auto;">
-                            {move || {
-                                events
-                                    .get()
-                                    .into_iter()
-                                    .map(|event| {
-                                        let color = match event.event_type.as_str() {
-                                            "Error" => "#f44336",
-                                            "MutationCompleted" => "#4caf50",
-                                            "ActionDispatched" => "#2196f3",
-                                            _ => "#888",
-                                        };
-                                        view! {
-                                            <div style=format!("padding: 2px 0; color: {};", color)>
-                                                {format!(
-                                                    "[{}] {}",
-                                                    event.event_type,
-                                                    event.store_name.unwrap_or_default()
-                                                )}
-                                            </div>
-                                        }
-                                    })
-                                    .collect_view()
+                        <div style="background: #1f2937; padding: 8px; border-radius: 4px; border-left: 3px solid #34d399; overflow: auto; max-height: 200px;">
+                            {match new_value.clone() {
+                                Some(val) => view! { <JsonValue value=val depth=0 /> }.into_any(),
+                                None => view! { <span style="color: #6b7280;">"-"</span> }.into_any()
                             }}
                         </div>
                     </div>
                 </div>
             </Show>
+            
+            // Raw payload for other events
+            <Show when=move || !has_diff>
+                <div>
+                    <div style="color: #9ca3af; font-size: 11px; margin-bottom: 6px;">
+                        "Payload"
+                    </div>
+                    <div style="background: #1f2937; padding: 8px; border-radius: 4px; overflow: auto; max-height: 200px;">
+                        {match payload_json.clone() {
+                            Some(val) => view! { <JsonValue value=val depth=0 /> }.into_any(),
+                            None => view! {
+                                <pre style="margin: 0; color: #d1d5db; white-space: pre-wrap;">{raw_payload.clone()}</pre>
+                            }.into_any()
+                        }}
+                    </div>
+                </div>
+            </Show>
         </div>
+    }
+}
+
+/// Format timestamp as human-readable time
+fn format_timestamp(ts: u64) -> String {
+    // Simple formatting - just show relative or absolute time
+    let now = current_timestamp_ms();
+    let diff = now.saturating_sub(ts);
+    
+    if diff < 1000 {
+        "just now".to_string()
+    } else if diff < 60_000 {
+        format!("{}s ago", diff / 1000)
+    } else if diff < 3_600_000 {
+        format!("{}m ago", diff / 60_000)
+    } else {
+        format!("{}h ago", diff / 3_600_000)
     }
 }
 
