@@ -49,8 +49,52 @@ use leptos::prelude::Get;
 use std::any::TypeId;
 use std::fmt;
 use std::sync::{Arc, RwLock};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use thiserror::Error;
+
+// ============================================================================
+// Cross-platform Timing
+// ============================================================================
+
+/// A cross-platform instant that works in both native and WASM.
+#[derive(Clone, Copy, Debug)]
+pub struct CrossInstant {
+    #[cfg(target_arch = "wasm32")]
+    millis: f64,
+    #[cfg(not(target_arch = "wasm32"))]
+    instant: std::time::Instant,
+}
+
+impl CrossInstant {
+    /// Get the current instant.
+    pub fn now() -> Self {
+        #[cfg(target_arch = "wasm32")]
+        {
+            let millis = js_sys::Date::now();
+            Self { millis }
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            Self {
+                instant: std::time::Instant::now(),
+            }
+        }
+    }
+
+    /// Get the duration since this instant was created.
+    pub fn elapsed(&self) -> Duration {
+        #[cfg(target_arch = "wasm32")]
+        {
+            let now = js_sys::Date::now();
+            let elapsed_ms = now - self.millis;
+            Duration::from_millis(elapsed_ms.max(0.0) as u64)
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.instant.elapsed()
+        }
+    }
+}
 
 // ============================================================================
 // Middleware Errors
@@ -207,7 +251,7 @@ impl ActionResult {
 pub struct MiddlewareContext<'a, S: Store> {
     store: &'a S,
     mutation_name: &'static str,
-    timestamp: Instant,
+    timestamp: CrossInstant,
     metadata: ContextMetadata,
 }
 
@@ -217,7 +261,7 @@ impl<'a, S: Store> MiddlewareContext<'a, S> {
         Self {
             store,
             mutation_name,
-            timestamp: Instant::now(),
+            timestamp: CrossInstant::now(),
             metadata: ContextMetadata::default(),
         }
     }
@@ -238,7 +282,7 @@ impl<'a, S: Store> MiddlewareContext<'a, S> {
     }
 
     /// Get the timestamp when this context was created.
-    pub fn timestamp(&self) -> Instant {
+    pub fn timestamp(&self) -> CrossInstant {
         self.timestamp
     }
 
@@ -273,7 +317,7 @@ pub struct ActionContext<'a, S: Store> {
     store: &'a S,
     action_type: TypeId,
     action_name: &'static str,
-    timestamp: Instant,
+    timestamp: CrossInstant,
     metadata: ContextMetadata,
 }
 
@@ -284,7 +328,7 @@ impl<'a, S: Store> ActionContext<'a, S> {
             store,
             action_type,
             action_name,
-            timestamp: Instant::now(),
+            timestamp: CrossInstant::now(),
             metadata: ContextMetadata::default(),
         }
     }
@@ -310,7 +354,7 @@ impl<'a, S: Store> ActionContext<'a, S> {
     }
 
     /// Get the timestamp when this context was created.
-    pub fn timestamp(&self) -> Instant {
+    pub fn timestamp(&self) -> CrossInstant {
         self.timestamp
     }
 
@@ -819,7 +863,7 @@ impl<S: Store> MiddlewareStore<S> {
         F: FnOnce(),
     {
         let ctx = MiddlewareContext::new(&self.inner, mutation_name);
-        let start = Instant::now();
+        let start = CrossInstant::now();
 
         // Emit mutation started event
         self.event_bus.emit(StoreEvent::MutationStarted {
@@ -881,7 +925,7 @@ impl<S: Store> MiddlewareStore<S> {
         F: FnOnce() -> R,
     {
         let ctx = ActionContext::new(&self.inner, action_type, action_name);
-        let start = Instant::now();
+        let start = CrossInstant::now();
 
         // Emit action dispatched event
         self.event_bus.emit(StoreEvent::ActionDispatched {
@@ -1462,11 +1506,18 @@ impl<S: Store> Middleware<S> for TracingMiddleware {
 
 /// Get current timestamp in milliseconds.
 fn current_timestamp_ms() -> u64 {
-    use std::time::SystemTime;
-    SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .map(|d| d.as_millis() as u64)
-        .unwrap_or(0)
+    #[cfg(target_arch = "wasm32")]
+    {
+        js_sys::Date::now() as u64
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use std::time::SystemTime;
+        SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0)
+    }
 }
 
 /// Create a middleware context for testing.
