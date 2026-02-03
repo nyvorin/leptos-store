@@ -28,7 +28,7 @@
 //! ```
 
 use crate::store::Store;
-use leptos::prelude::{Get, GetUntracked};
+use leptos::prelude::GetUntracked;
 use std::collections::HashMap;
 use std::fmt;
 use std::future::Future;
