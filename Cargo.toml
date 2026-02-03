@@ -30,7 +30,7 @@ csr = []
 
 # New features for extended functionality
 middleware = ["dep:js-sys"]
-devtools = ["middleware", "dep:js-sys"]
+devtools = ["middleware", "dep:js-sys", "dep:serde", "dep:serde_json"]
 tracing = ["middleware", "dep:tracing"]
 persist-web = ["dep:web-sys", "dep:wasm-bindgen", "dep:base64", "dep:serde", "dep:serde_json", "dep:js-sys"]
 persist-idb = ["persist-web"]
