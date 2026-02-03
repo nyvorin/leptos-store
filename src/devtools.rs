@@ -626,14 +626,11 @@ impl EventSubscriber for DevtoolsEventSubscriber {
 /// ```
 #[component]
 pub fn StoreInspector(
-    /// Whether collapsed by default.
-    #[prop(optional, default = false)]
-    collapsed: bool,
     /// Maximum events to show.
     #[prop(optional, default = 100)]
     max_events: usize,
 ) -> impl IntoView {
-    let is_collapsed = RwSignal::new(collapsed);
+    let is_open = RwSignal::new(false);
     let selected_store = RwSignal::new(Option::<String>::None);
     let selected_event = RwSignal::new(Option::<usize>::None);
     let events = RwSignal::new(Vec::<DevtoolsEvent>::new());
@@ -642,7 +639,7 @@ pub fn StoreInspector(
 
     // Get store list reactively
     let stores = move || {
-        let _ = refresh_counter.get(); // Track refreshes
+        let _ = refresh_counter.get();
         get_devtools_state()
             .map(|s| s.stores.values().cloned().collect::<Vec<_>>())
             .unwrap_or_default()
@@ -657,10 +654,10 @@ pub fn StoreInspector(
         }
     });
 
-    // Get current state for selected store (reactive via thread_local on WASM)
+    // Get current state for selected store
     #[cfg(target_arch = "wasm32")]
     let get_current_state = move || -> Option<String> {
-        let _ = refresh_counter.get(); // Track refreshes
+        let _ = refresh_counter.get();
         let key = selected_store.get()?;
         STATE_GETTERS.with(|getters| {
             getters.borrow().get(&key).map(|getter| getter())
@@ -688,136 +685,147 @@ pub fn StoreInspector(
         refresh_counter.update(|c| *c = c.wrapping_add(1));
     };
 
-    // Auto-refresh events on tab switch
+    // Auto-refresh events on tab switch or open
     Effect::new(move |_| {
-        if active_tab.get() == "events" {
+        if is_open.get() && active_tab.get() == "events" {
             update_events();
         }
     });
 
-    // CSS styles as a const for cleaner code
-    const PANEL_STYLE: &str = "position: fixed; bottom: 0; right: 0; z-index: 99999; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace; font-size: 13px; width: 500px; max-height: 70vh; display: flex; flex-direction: column; box-shadow: -2px -2px 10px rgba(0,0,0,0.3); border-radius: 8px 0 0 0;";
-    const HEADER_STYLE: &str = "background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #fff; padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 0 0 0; user-select: none;";
-    const TAB_STYLE: &str = "background: #1f2937; display: flex; border-bottom: 1px solid #374151;";
-    const TAB_BTN_STYLE: &str = "flex: 1; padding: 10px; border: none; cursor: pointer; font-size: 13px; transition: all 0.2s;";
-    const CONTENT_STYLE: &str = "background: #111827; color: #e5e7eb; flex: 1; overflow: auto; min-height: 300px;";
-    
     view! {
-        <div
-            class="leptos-store-inspector"
-            style=move || if is_collapsed.get() {
-                "position: fixed; bottom: 20px; right: 20px; z-index: 99999;"
-            } else {
-                PANEL_STYLE
-            }
-        >
-            // Header bar
-            <div
-                style=HEADER_STYLE
-                on:click=move |_| is_collapsed.update(|c| *c = !*c)
+        // Floating trigger button (when closed)
+        <Show when=move || !is_open.get()>
+            <button
+                style="position: fixed; bottom: 20px; right: 20px; z-index: 99998; width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border: 2px solid #60a5fa; color: white; font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); display: flex; align-items: center; justify-content: center;"
+                on:click=move |_| is_open.set(true)
             >
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 16px;">"🔍"</span>
-                    <span style="font-weight: 600;">"Leptos Store Inspector"</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="font-size: 11px; color: #9ca3af;">
+                "🔍"
+            </button>
+        </Show>
+
+        // Backdrop (click to close)
+        <Show when=move || is_open.get()>
+            <div
+                style="position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 99998; transition: opacity 0.3s;"
+                on:click=move |_| is_open.set(false)
+            />
+        </Show>
+
+        // Slide-in panel
+        <div
+            style=move || format!(
+                "position: fixed; top: 0; right: 0; bottom: 0; width: 600px; max-width: 90vw; z-index: 99999; \
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace; font-size: 13px; \
+                background: #111827; display: flex; flex-direction: column; box-shadow: -4px 0 20px rgba(0,0,0,0.3); \
+                transform: translateX({}); transition: transform 0.3s ease-out;",
+                if is_open.get() { "0" } else { "100%" }
+            )
+        >
+            // Header
+            <div style="background: linear-gradient(135deg, #1e3a5f 0%, #1a1a2e 100%); color: #fff; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 18px;">"🔍"</span>
+                    <span style="font-weight: 600; font-size: 15px;">"Store Inspector"</span>
+                    <span style="font-size: 11px; color: #9ca3af; background: #374151; padding: 2px 8px; border-radius: 10px;">
                         {move || format!("{} store(s)", stores().len())}
                     </span>
-                    <span style="font-size: 18px;">{move || if is_collapsed.get() { "◀" } else { "▼" }}</span>
                 </div>
+                <button
+                    style="background: #374151; border: none; color: #fff; font-size: 20px; cursor: pointer; padding: 4px 12px; border-radius: 4px; font-weight: 300;"
+                    on:click=move |_| is_open.set(false)
+                >
+                    "✕"
+                </button>
             </div>
 
-            // Content panel
-            <Show when=move || !is_collapsed.get()>
-                // Tab bar
-                <div style=TAB_STYLE>
-                    <button
-                        style=move || format!(
-                            "{} background: {}; color: {};",
-                            TAB_BTN_STYLE,
-                            if active_tab.get() == "state" { "#374151" } else { "transparent" },
-                            if active_tab.get() == "state" { "#60a5fa" } else { "#9ca3af" }
-                        )
-                        on:click=move |_| active_tab.set("state")
-                    >
-                        "📊 State"
-                    </button>
-                    <button
-                        style=move || format!(
-                            "{} background: {}; color: {};",
-                            TAB_BTN_STYLE,
-                            if active_tab.get() == "events" { "#374151" } else { "transparent" },
-                            if active_tab.get() == "events" { "#60a5fa" } else { "#9ca3af" }
-                        )
-                        on:click=move |_| { active_tab.set("events"); update_events(); }
-                    >
-                        "📜 Events"
-                        <span style="margin-left: 6px; background: #4b5563; padding: 2px 6px; border-radius: 10px; font-size: 11px;">
-                            {move || events.get().len()}
-                        </span>
-                    </button>
-                </div>
+            // Tab bar
+            <div style="background: #1f2937; display: flex; border-bottom: 1px solid #374151; flex-shrink: 0;">
+                <button
+                    style=move || format!(
+                        "flex: 1; padding: 12px 16px; border: none; cursor: pointer; font-size: 13px; transition: all 0.2s; background: {}; color: {}; border-bottom: 2px solid {};",
+                        if active_tab.get() == "state" { "#111827" } else { "transparent" },
+                        if active_tab.get() == "state" { "#60a5fa" } else { "#9ca3af" },
+                        if active_tab.get() == "state" { "#3b82f6" } else { "transparent" }
+                    )
+                    on:click=move |_| active_tab.set("state")
+                >
+                    "📊 State"
+                </button>
+                <button
+                    style=move || format!(
+                        "flex: 1; padding: 12px 16px; border: none; cursor: pointer; font-size: 13px; transition: all 0.2s; background: {}; color: {}; border-bottom: 2px solid {};",
+                        if active_tab.get() == "events" { "#111827" } else { "transparent" },
+                        if active_tab.get() == "events" { "#60a5fa" } else { "#9ca3af" },
+                        if active_tab.get() == "events" { "#3b82f6" } else { "transparent" }
+                    )
+                    on:click=move |_| { active_tab.set("events"); update_events(); }
+                >
+                    "📜 Events"
+                    <span style="margin-left: 8px; background: #4b5563; padding: 2px 8px; border-radius: 10px; font-size: 11px;">
+                        {move || events.get().len()}
+                    </span>
+                </button>
+            </div>
 
-                <div style=CONTENT_STYLE>
-                    // State Tab
-                    <Show when=move || active_tab.get() == "state">
-                        <div style="display: flex; height: 100%;">
-                            // Store list sidebar
-                            <div style="width: 140px; border-right: 1px solid #374151; padding: 8px 0; overflow-y: auto;">
-                                <div style="padding: 4px 12px; color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">
-                                    "Stores"
-                                </div>
-                                {move || {
-                                    stores()
-                                        .into_iter()
-                                        .map(|store| {
-                                            let key = store.key.clone();
-                                            let key2 = store.key.clone();
-                                            let is_selected = move || selected_store.get().as_ref() == Some(&key);
-                                            view! {
-                                                <div
-                                                    style=move || format!(
-                                                        "padding: 8px 12px; cursor: pointer; transition: all 0.15s; {}",
-                                                        if is_selected() { "background: #374151; color: #60a5fa;" } else { "color: #d1d5db;" }
-                                                    )
-                                                    on:click=move |_| {
-                                                        selected_store.set(Some(key2.clone()));
-                                                        refresh_counter.update(|c| *c = c.wrapping_add(1));
-                                                    }
-                                                >
-                                                    {store.key.clone()}
-                                                </div>
-                                            }
-                                        })
-                                        .collect_view()
-                                }}
+            // Content area
+            <div style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+                // State Tab
+                <Show when=move || active_tab.get() == "state">
+                    <div style="display: flex; flex: 1; overflow: hidden;">
+                        // Store list sidebar
+                        <div style="width: 160px; border-right: 1px solid #374151; overflow-y: auto; flex-shrink: 0;">
+                            <div style="padding: 12px 16px; color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #1f2937;">
+                                "Stores"
                             </div>
+                            {move || {
+                                stores()
+                                    .into_iter()
+                                    .map(|store| {
+                                        let key = store.key.clone();
+                                        let key2 = store.key.clone();
+                                        let is_selected = move || selected_store.get().as_ref() == Some(&key);
+                                        view! {
+                                            <div
+                                                style=move || format!(
+                                                    "padding: 10px 16px; cursor: pointer; transition: all 0.15s; border-left: 3px solid {}; {}",
+                                                    if is_selected() { "#3b82f6" } else { "transparent" },
+                                                    if is_selected() { "background: #1f2937; color: #60a5fa;" } else { "color: #d1d5db;" }
+                                                )
+                                                on:click=move |_| {
+                                                    selected_store.set(Some(key2.clone()));
+                                                    refresh_counter.update(|c| *c = c.wrapping_add(1));
+                                                }
+                                            >
+                                                {store.key.clone()}
+                                            </div>
+                                        }
+                                    })
+                                    .collect_view()
+                            }}
+                        </div>
 
-                            // State viewer
-                            <div style="flex: 1; padding: 12px; overflow: auto;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                    <span style="color: #9ca3af; font-size: 11px;">
-                                        {move || selected_store.get().unwrap_or_else(|| "No store selected".to_string())}
-                                    </span>
-                                    <button
-                                        style="background: #374151; border: none; color: #9ca3af; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;"
-                                        on:click=move |_| refresh_counter.update(|c| *c = c.wrapping_add(1))
-                                    >
-                                        "↻ Refresh"
-                                    </button>
-                                </div>
-                                
-                                // State tree
+                        // State viewer
+                        <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #1f2937; flex-shrink: 0;">
+                                <span style="color: #9ca3af; font-size: 12px;">
+                                    {move || selected_store.get().unwrap_or_else(|| "No store selected".to_string())}
+                                </span>
+                                <button
+                                    style="background: #374151; border: none; color: #d1d5db; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.15s;"
+                                    on:click=move |_| refresh_counter.update(|c| *c = c.wrapping_add(1))
+                                >
+                                    "↻ Refresh"
+                                </button>
+                            </div>
+                            
+                            <div style="flex: 1; overflow: auto; padding: 16px;">
                                 <div style="font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 12px; line-height: 1.6;">
                                     {move || {
                                         match get_current_state() {
                                             Some(state_str) => {
-                                                // Check if JSON or Debug format
                                                 if let Some(json_str) = state_str.strip_prefix("JSON:") {
                                                     view! { <JsonTreeView json=json_str.to_string() /> }.into_any()
                                                 } else {
-                                                    // Debug format - render as preformatted
                                                     view! {
                                                         <pre style="margin: 0; white-space: pre-wrap; word-break: break-word; color: #a5b4fc;">
                                                             {state_str}
@@ -835,81 +843,82 @@ pub fn StoreInspector(
                                 </div>
                             </div>
                         </div>
-                    </Show>
+                    </div>
+                </Show>
 
-                    // Events Tab
-                    <Show when=move || active_tab.get() == "events">
-                        <div style="display: flex; height: 100%;">
-                            // Event list
-                            <div style="width: 200px; border-right: 1px solid #374151; overflow-y: auto;">
-                                {move || {
-                                    events
-                                        .get()
-                                        .into_iter()
-                                        .enumerate()
-                                        .map(|(idx, event)| {
-                                            let is_selected = move || selected_event.get() == Some(idx);
-                                            let (color, icon) = match event.event_type.as_str() {
-                                                "StateChanged" => ("#fbbf24", "⚡"),
-                                                "StoreRegistered" => ("#34d399", "📦"),
-                                                "MutationStarted" => ("#60a5fa", "▶"),
-                                                "MutationCompleted" => ("#34d399", "✓"),
-                                                "ActionDispatched" => ("#a78bfa", "→"),
-                                                "ActionCompleted" => ("#34d399", "✓"),
-                                                "Error" => ("#f87171", "✕"),
-                                                _ => ("#9ca3af", "•"),
-                                            };
-                                            let store_name = event.store_name.clone().unwrap_or_default();
-                                            let event_type = event.event_type.clone();
-                                            view! {
-                                                <div
-                                                    style=move || format!(
-                                                        "padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #1f2937; transition: all 0.15s; {}",
-                                                        if is_selected() { "background: #374151;" } else { "" }
-                                                    )
-                                                    on:click=move |_| selected_event.set(Some(idx))
-                                                >
-                                                    <div style=format!("color: {}; font-size: 12px; display: flex; align-items: center; gap: 6px;", color)>
-                                                        <span>{icon}</span>
-                                                        <span>{event_type.clone()}</span>
-                                                    </div>
-                                                    <div style="color: #6b7280; font-size: 11px; margin-top: 2px;">
-                                                        {store_name.clone()}
-                                                    </div>
+                // Events Tab
+                <Show when=move || active_tab.get() == "events">
+                    <div style="display: flex; flex: 1; overflow: hidden;">
+                        // Event list
+                        <div style="width: 220px; border-right: 1px solid #374151; overflow-y: auto; flex-shrink: 0;">
+                            {move || {
+                                events
+                                    .get()
+                                    .into_iter()
+                                    .enumerate()
+                                    .map(|(idx, event)| {
+                                        let is_selected = move || selected_event.get() == Some(idx);
+                                        let (color, icon) = match event.event_type.as_str() {
+                                            "StateChanged" => ("#fbbf24", "⚡"),
+                                            "StoreRegistered" => ("#34d399", "📦"),
+                                            "MutationStarted" => ("#60a5fa", "▶"),
+                                            "MutationCompleted" => ("#34d399", "✓"),
+                                            "ActionDispatched" => ("#a78bfa", "→"),
+                                            "ActionCompleted" => ("#34d399", "✓"),
+                                            "Error" => ("#f87171", "✕"),
+                                            _ => ("#9ca3af", "•"),
+                                        };
+                                        let store_name = event.store_name.clone().unwrap_or_default();
+                                        let event_type = event.event_type.clone();
+                                        view! {
+                                            <div
+                                                style=move || format!(
+                                                    "padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #1f2937; transition: all 0.15s; border-left: 3px solid {}; {}",
+                                                    if is_selected() { color } else { "transparent" },
+                                                    if is_selected() { "background: #1f2937;" } else { "" }
+                                                )
+                                                on:click=move |_| selected_event.set(Some(idx))
+                                            >
+                                                <div style=format!("color: {}; font-size: 12px; display: flex; align-items: center; gap: 6px;", color)>
+                                                    <span>{icon}</span>
+                                                    <span style="font-weight: 500;">{event_type.clone()}</span>
                                                 </div>
-                                            }
-                                        })
-                                        .collect_view()
-                                }}
-                            </div>
-
-                            // Event detail
-                            <div style="flex: 1; padding: 12px; overflow: auto;">
-                                {move || {
-                                    match selected_event.get() {
-                                        Some(idx) => {
-                                            let event = events.get().get(idx).cloned();
-                                            match event {
-                                                Some(e) => view! { <EventDetailView event=e /> }.into_any(),
-                                                None => view! {
-                                                    <div style="color: #6b7280; text-align: center; padding: 40px;">
-                                                        "Event not found"
-                                                    </div>
-                                                }.into_any()
-                                            }
-                                        }
-                                        None => view! {
-                                            <div style="color: #6b7280; text-align: center; padding: 40px;">
-                                                "Select an event to view details"
+                                                <div style="color: #6b7280; font-size: 11px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                    {store_name.clone()}
+                                                </div>
                                             </div>
-                                        }.into_any()
-                                    }
-                                }}
-                            </div>
+                                        }
+                                    })
+                                    .collect_view()
+                            }}
                         </div>
-                    </Show>
-                </div>
-            </Show>
+
+                        // Event detail
+                        <div style="flex: 1; overflow: auto; padding: 16px;">
+                            {move || {
+                                match selected_event.get() {
+                                    Some(idx) => {
+                                        let event = events.get().get(idx).cloned();
+                                        match event {
+                                            Some(e) => view! { <EventDetailView event=e /> }.into_any(),
+                                            None => view! {
+                                                <div style="color: #6b7280; text-align: center; padding: 40px;">
+                                                    "Event not found"
+                                                </div>
+                                            }.into_any()
+                                        }
+                                    }
+                                    None => view! {
+                                        <div style="color: #6b7280; text-align: center; padding: 40px;">
+                                            "Select an event to view details"
+                                        </div>
+                                    }.into_any()
+                                }
+                            }}
+                        </div>
+                    </div>
+                </Show>
+            </div>
         </div>
     }
 }
@@ -1020,6 +1029,41 @@ fn JsonValue(value: serde_json::Value, depth: usize) -> impl IntoView {
     }
 }
 
+/// Collapsible section component
+#[component]
+fn CollapsibleSection(
+    title: &'static str,
+    color: &'static str,
+    icon: &'static str,
+    children: Children,
+) -> impl IntoView {
+    let is_expanded = RwSignal::new(true);
+    
+    view! {
+        <div style="background: #1f2937; border-radius: 6px; overflow: hidden;">
+            <div 
+                style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #374151; user-select: none;"
+                on:click=move |_| is_expanded.update(|e| *e = !*e)
+            >
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style=format!("color: {}; font-size: 14px;", color)>{icon}</span>
+                    <span style=format!("color: {}; font-weight: 600; font-size: 12px;", color)>{title}</span>
+                </div>
+                <span style="color: #6b7280; font-size: 14px;">
+                    {move || if is_expanded.get() { "▼" } else { "▶" }}
+                </span>
+            </div>
+            <div style=move || format!(
+                "padding: 12px 14px; border-left: 3px solid {}; max-height: 300px; overflow: auto; display: {};",
+                color,
+                if is_expanded.get() { "block" } else { "none" }
+            )>
+                {children()}
+            </div>
+        </div>
+    }
+}
+
 /// Event detail view component
 #[component]
 fn EventDetailView(event: DevtoolsEvent) -> impl IntoView {
@@ -1039,64 +1083,66 @@ fn EventDetailView(event: DevtoolsEvent) -> impl IntoView {
     view! {
         <div style="font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 12px;">
             // Event header
-            <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #374151;">
-                <div style="font-size: 14px; font-weight: 600; color: #f3f4f6; margin-bottom: 8px;">
-                    {event.event_type.clone()}
+            <div style="margin-bottom: 16px; padding: 12px; background: #1f2937; border-radius: 6px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                    <span style="font-size: 16px;">
+                        {match event.event_type.as_str() {
+                            "StateChanged" => "⚡",
+                            "StoreRegistered" => "📦",
+                            "Error" => "❌",
+                            _ => "📋"
+                        }}
+                    </span>
+                    <span style="font-size: 15px; font-weight: 600; color: #f3f4f6;">
+                        {event.event_type.clone()}
+                    </span>
                 </div>
-                <div style="display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; color: #9ca3af; font-size: 11px;">
-                    <span>"Store:"</span>
-                    <span style="color: #60a5fa;">{event.store_name.clone().unwrap_or_else(|| "-".to_string())}</span>
-                    <span>"Time:"</span>
+                <div style="display: grid; grid-template-columns: 80px 1fr; gap: 6px; color: #9ca3af; font-size: 12px;">
+                    <span style="color: #6b7280;">"Store"</span>
+                    <span style="color: #60a5fa; font-weight: 500;">{event.store_name.clone().unwrap_or_else(|| "-".to_string())}</span>
+                    <span style="color: #6b7280;">"Time"</span>
                     <span>{format_timestamp(event.timestamp)}</span>
                 </div>
             </div>
             
-            // State diff view for StateChanged events
-            <Show when=move || has_diff>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                    // Old value
-                    <div>
-                        <div style="color: #f87171; font-size: 11px; margin-bottom: 6px; font-weight: 600;">
-                            "← BEFORE"
+            // State diff view for StateChanged events - stacked vertically
+            {if has_diff {
+                let old_val = old_value.unwrap();
+                let new_val = new_value.unwrap();
+                view! {
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <CollapsibleSection title="BEFORE" color="#f87171" icon="◀">
+                            <JsonValue value=old_val depth=0 />
+                        </CollapsibleSection>
+                        
+                        <div style="display: flex; justify-content: center; color: #6b7280;">
+                            <span style="font-size: 18px;">"↓"</span>
                         </div>
-                        <div style="background: #1f2937; padding: 8px; border-radius: 4px; border-left: 3px solid #f87171; overflow: auto; max-height: 200px;">
-                            {match old_value.clone() {
+                        
+                        <CollapsibleSection title="AFTER" color="#34d399" icon="▶">
+                            <JsonValue value=new_val depth=0 />
+                        </CollapsibleSection>
+                    </div>
+                }.into_any()
+            } else {
+                // Raw payload for other events
+                let payload_val = payload_json.clone();
+                view! {
+                    <div style="background: #1f2937; border-radius: 6px; overflow: hidden;">
+                        <div style="padding: 10px 14px; border-bottom: 1px solid #374151;">
+                            <span style="color: #9ca3af; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">"Payload"</span>
+                        </div>
+                        <div style="padding: 12px 14px; max-height: 300px; overflow: auto;">
+                            {match payload_val {
                                 Some(val) => view! { <JsonValue value=val depth=0 /> }.into_any(),
-                                None => view! { <span style="color: #6b7280;">"-"</span> }.into_any()
+                                None => view! {
+                                    <pre style="margin: 0; color: #d1d5db; white-space: pre-wrap;">{raw_payload}</pre>
+                                }.into_any()
                             }}
                         </div>
                     </div>
-                    // New value
-                    <div>
-                        <div style="color: #34d399; font-size: 11px; margin-bottom: 6px; font-weight: 600;">
-                            "→ AFTER"
-                        </div>
-                        <div style="background: #1f2937; padding: 8px; border-radius: 4px; border-left: 3px solid #34d399; overflow: auto; max-height: 200px;">
-                            {match new_value.clone() {
-                                Some(val) => view! { <JsonValue value=val depth=0 /> }.into_any(),
-                                None => view! { <span style="color: #6b7280;">"-"</span> }.into_any()
-                            }}
-                        </div>
-                    </div>
-                </div>
-            </Show>
-            
-            // Raw payload for other events
-            <Show when=move || !has_diff>
-                <div>
-                    <div style="color: #9ca3af; font-size: 11px; margin-bottom: 6px;">
-                        "Payload"
-                    </div>
-                    <div style="background: #1f2937; padding: 8px; border-radius: 4px; overflow: auto; max-height: 200px;">
-                        {match payload_json.clone() {
-                            Some(val) => view! { <JsonValue value=val depth=0 /> }.into_any(),
-                            None => view! {
-                                <pre style="margin: 0; color: #d1d5db; white-space: pre-wrap;">{raw_payload.clone()}</pre>
-                            }.into_any()
-                        }}
-                    </div>
-                </div>
-            </Show>
+                }.into_any()
+            }}
         </div>
     }
 }
