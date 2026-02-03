@@ -38,7 +38,18 @@ use wasm_bindgen::prelude::*;
 /// Global devtools state.
 static DEVTOOLS: std::sync::OnceLock<Arc<RwLock<DevtoolsState>>> = std::sync::OnceLock::new();
 
-/// Internal devtools state.
+/// State getter function type (WASM only - uses Rc since signals aren't Send+Sync).
+#[cfg(target_arch = "wasm32")]
+type StateGetter = std::rc::Rc<dyn Fn() -> String>;
+
+/// Thread-local storage for state getters (WASM only).
+/// Kept separate from DEVTOOLS because Rc is not Sync.
+#[cfg(target_arch = "wasm32")]
+thread_local! {
+    static STATE_GETTERS: std::cell::RefCell<HashMap<String, StateGetter>> = std::cell::RefCell::new(HashMap::new());
+}
+
+/// Internal devtools state (must be Sync for static storage).
 #[derive(Default)]
 struct DevtoolsState {
     /// Registered stores by name.
@@ -133,7 +144,7 @@ pub struct DevtoolsConfig {
 impl Default for DevtoolsConfig {
     fn default() -> Self {
         Self {
-            enabled: cfg!(debug_assertions),
+            enabled: true,
             max_events: 1000,
             expose_console_api: true,
             connect_extension: true,
@@ -158,16 +169,19 @@ fn init_console_api() {
     // Create the API object
     let api = js_sys::Object::new();
 
-    // Add getStores function
+    // Add getStores function - returns a JS object with store info
     let get_stores = Closure::wrap(Box::new(|| -> JsValue {
         match get_devtools_state() {
             Some(state) => {
-                let stores: Vec<_> = state
-                    .stores
-                    .values()
-                    .map(|s| format!("{}: {}", s.key, s.type_name))
-                    .collect();
-                JsValue::from_str(&stores.join("\n"))
+                let result = js_sys::Object::new();
+                for info in state.stores.values() {
+                    let store_obj = js_sys::Object::new();
+                    js_sys::Reflect::set(&store_obj, &JsValue::from_str("name"), &JsValue::from_str(&info.name)).ok();
+                    js_sys::Reflect::set(&store_obj, &JsValue::from_str("type"), &JsValue::from_str(info.type_name)).ok();
+                    js_sys::Reflect::set(&store_obj, &JsValue::from_str("registeredAt"), &JsValue::from_f64(info.registered_at as f64)).ok();
+                    js_sys::Reflect::set(&result, &JsValue::from_str(&info.key), &store_obj).ok();
+                }
+                result.into()
             }
             None => JsValue::from_str("Devtools not initialized"),
         }
@@ -181,9 +195,55 @@ fn init_console_api() {
     .ok();
     get_stores.forget();
 
-    // Add getState function
+    // Add getState function - returns a JS object with state info
     let get_state = Closure::wrap(Box::new(|key: String| -> JsValue {
-        JsValue::from_str(&format!("State for '{}' (not implemented)", key))
+        // Try to get state from thread_local getters
+        let state_result = STATE_GETTERS.with(|getters| {
+            getters.borrow().get(&key).map(|getter| getter())
+        });
+        
+        match state_result {
+            Some(state_str) => {
+                let obj = js_sys::Object::new();
+                js_sys::Reflect::set(&obj, &JsValue::from_str("key"), &JsValue::from_str(&key)).ok();
+                
+                // Add type info if available from devtools state
+                if let Some(devtools_state) = get_devtools_state() {
+                    if let Some(info) = devtools_state.stores.get(&key) {
+                        js_sys::Reflect::set(&obj, &JsValue::from_str("type"), &JsValue::from_str(info.type_name)).ok();
+                        js_sys::Reflect::set(&obj, &JsValue::from_str("name"), &JsValue::from_str(&info.name)).ok();
+                    }
+                }
+                
+                // Get state - check if it's JSON or Debug formatted
+                if let Some(json_str) = state_str.strip_prefix("JSON:") {
+                    // Parse as JSON for proper JS object
+                    if let Ok(parsed) = js_sys::JSON::parse(json_str) {
+                        js_sys::Reflect::set(&obj, &JsValue::from_str("state"), &parsed).ok();
+                    } else {
+                        js_sys::Reflect::set(&obj, &JsValue::from_str("state"), &JsValue::from_str(json_str)).ok();
+                    }
+                } else {
+                    // Debug formatted string
+                    js_sys::Reflect::set(&obj, &JsValue::from_str("state"), &JsValue::from_str(&state_str)).ok();
+                }
+                obj.into()
+            }
+            None => {
+                // Return an error object
+                let err = js_sys::Object::new();
+                js_sys::Reflect::set(&err, &JsValue::from_str("error"), &JsValue::from_str("Store not found")).ok();
+                js_sys::Reflect::set(&err, &JsValue::from_str("key"), &JsValue::from_str(&key)).ok();
+                let available = js_sys::Array::new();
+                if let Some(devtools_state) = get_devtools_state() {
+                    for k in devtools_state.stores.keys() {
+                        available.push(&JsValue::from_str(k));
+                    }
+                }
+                js_sys::Reflect::set(&err, &JsValue::from_str("available"), &available).ok();
+                err.into()
+            }
+        }
     }) as Box<dyn Fn(String) -> JsValue>);
 
     js_sys::Reflect::set(
@@ -194,26 +254,26 @@ fn init_console_api() {
     .ok();
     get_state.forget();
 
-    // Add getEvents function
+    // Add getEvents function - returns a JS array of event objects
     let get_events = Closure::wrap(Box::new(|count: Option<u32>| -> JsValue {
         let count = count.unwrap_or(10) as usize;
         match get_devtools_state() {
             Some(state) => {
-                let events: Vec<_> = state
-                    .events
-                    .iter()
-                    .rev()
-                    .take(count)
-                    .map(|e| {
-                        format!(
-                            "[{}] {}: {}",
-                            e.timestamp,
-                            e.event_type,
-                            e.store_name.as_deref().unwrap_or("-")
-                        )
-                    })
-                    .collect();
-                JsValue::from_str(&events.join("\n"))
+                let arr = js_sys::Array::new();
+                for event in state.events.iter().rev().take(count) {
+                    let obj = js_sys::Object::new();
+                    js_sys::Reflect::set(&obj, &JsValue::from_str("type"), &JsValue::from_str(&event.event_type)).ok();
+                    js_sys::Reflect::set(&obj, &JsValue::from_str("store"), &JsValue::from_str(event.store_name.as_deref().unwrap_or("-"))).ok();
+                    js_sys::Reflect::set(&obj, &JsValue::from_str("timestamp"), &JsValue::from_f64(event.timestamp as f64)).ok();
+                    // Parse payload as JSON if possible
+                    if let Ok(payload) = js_sys::JSON::parse(&event.payload) {
+                        js_sys::Reflect::set(&obj, &JsValue::from_str("payload"), &payload).ok();
+                    } else {
+                        js_sys::Reflect::set(&obj, &JsValue::from_str("payload"), &JsValue::from_str(&event.payload)).ok();
+                    }
+                    arr.push(&obj);
+                }
+                arr.into()
             }
             None => JsValue::from_str("Devtools not initialized"),
         }
@@ -258,6 +318,7 @@ Commands:
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+#[allow(dead_code)]
 fn init_console_api() {
     // No-op on non-WASM
 }
@@ -276,16 +337,138 @@ fn get_devtools_state_mut() -> Option<std::sync::RwLockWriteGuard<'static, Devto
 // Store Registration
 // ============================================================================
 
-/// Register a store with devtools.
-pub fn register_store<S: Store>(store: &S, key: impl Into<String>) {
-    if let Some(mut state) = get_devtools_state_mut() {
+/// Register a store with devtools using Debug formatting.
+///
+/// The store's state will be accessible via `__LEPTOS_STORE__.getState("key")` 
+/// in the browser console. State is shown as a formatted Debug string.
+///
+/// For proper JSON object output, use [`register_store_json`] instead.
+pub fn register_store<S: Store>(store: &S, key: impl Into<String>)
+where
+    S::State: std::fmt::Debug + 'static,
+{
+    let key = key.into();
+    let store_name = store.name().to_string();
+    
+    if let Some(mut devtools_state) = get_devtools_state_mut() {
         let info = StoreInfo {
-            name: store.name().to_string(),
-            key: key.into(),
+            name: store_name.clone(),
+            key: key.clone(),
             type_name: std::any::type_name::<S>(),
             registered_at: current_timestamp_ms(),
         };
-        state.stores.insert(info.key.clone(), info);
+        devtools_state.stores.insert(info.key.clone(), info);
+        
+        // Record a registration event
+        devtools_state.events.push(DevtoolsEvent {
+            event_type: "StoreRegistered".to_string(),
+            store_name: Some(store_name.clone()),
+            payload: format!(r#"{{"key":"{}"}}"#, key),
+            timestamp: current_timestamp_ms(),
+        });
+        
+    }
+    
+    // Store a Debug-based state getter (WASM only, in thread_local)
+    #[cfg(target_arch = "wasm32")]
+    {
+        let state_signal = store.state();
+        let getter: StateGetter = std::rc::Rc::new(move || {
+            format!("{:#?}", state_signal.get_untracked())
+        });
+        STATE_GETTERS.with(|getters| {
+            getters.borrow_mut().insert(key.clone(), getter);
+        });
+    }
+    
+    // Set up automatic state change tracking (WASM only)
+    #[cfg(target_arch = "wasm32")]
+    {
+        let state_signal = store.state();
+        let key_for_effect = key.clone();
+        let name_for_effect = store_name;
+        Effect::new(move |prev: Option<()>| {
+            // Read the state to track changes
+            let _ = state_signal.get();
+            
+            // Don't record on first run (initial state)
+            if prev.is_some() {
+                record_event(DevtoolsEvent {
+                    event_type: "StateChanged".to_string(),
+                    store_name: Some(name_for_effect.clone()),
+                    payload: format!(r#"{{"store":"{}"}}"#, key_for_effect),
+                    timestamp: current_timestamp_ms(),
+                });
+            }
+        });
+    }
+}
+
+/// Register a store with devtools using JSON serialization.
+///
+/// The store's state will be accessible via `__LEPTOS_STORE__.getState("key")` 
+/// in the browser console as a proper JavaScript object.
+///
+/// Requires `State: Serialize`. For types that only implement `Debug`, 
+/// use [`register_store`] instead.
+pub fn register_store_json<S: Store>(store: &S, key: impl Into<String>)
+where
+    S::State: serde::Serialize + 'static,
+{
+    let key = key.into();
+    let store_name = store.name().to_string();
+    
+    if let Some(mut devtools_state) = get_devtools_state_mut() {
+        let info = StoreInfo {
+            name: store_name.clone(),
+            key: key.clone(),
+            type_name: std::any::type_name::<S>(),
+            registered_at: current_timestamp_ms(),
+        };
+        devtools_state.stores.insert(info.key.clone(), info);
+        
+        // Record a registration event
+        devtools_state.events.push(DevtoolsEvent {
+            event_type: "StoreRegistered".to_string(),
+            store_name: Some(store_name.clone()),
+            payload: format!(r#"{{"key":"{}"}}"#, key),
+            timestamp: current_timestamp_ms(),
+        });
+        
+    }
+    
+    // Store a JSON-based state getter (WASM only, in thread_local)
+    #[cfg(target_arch = "wasm32")]
+    {
+        let state_signal = store.state();
+        let getter: StateGetter = std::rc::Rc::new(move || {
+            format!("JSON:{}", serde_json::to_string(&state_signal.get_untracked()).unwrap_or_else(|_| "{}".to_string()))
+        });
+        STATE_GETTERS.with(|getters| {
+            getters.borrow_mut().insert(key.clone(), getter);
+        });
+    }
+    
+    // Set up automatic state change tracking (WASM only)
+    #[cfg(target_arch = "wasm32")]
+    {
+        let state_signal = store.state();
+        let key_for_effect = key.clone();
+        let name_for_effect = store_name;
+        Effect::new(move |prev: Option<()>| {
+            // Read the state to track changes
+            let _ = state_signal.get();
+            
+            // Don't record on first run (initial state)
+            if prev.is_some() {
+                record_event(DevtoolsEvent {
+                    event_type: "StateChanged".to_string(),
+                    store_name: Some(name_for_effect.clone()),
+                    payload: format!(r#"{{"store":"{}"}}"#, key_for_effect),
+                    timestamp: current_timestamp_ms(),
+                });
+            }
+        });
     }
 }
 
@@ -617,6 +800,7 @@ pub fn connect_devtools_extension(_instance_name: &str) -> bool {
     }
 }
 
+/// Connect to devtools extension (no-op on non-WASM).
 #[cfg(not(target_arch = "wasm32"))]
 pub fn connect_devtools_extension(_instance_name: &str) -> bool {
     false
@@ -628,6 +812,7 @@ pub fn send_to_extension(_message: DevtoolsMessage) {
     // Implementation would use postMessage to communicate with extension
 }
 
+/// Send a message to the devtools extension (no-op on non-WASM).
 #[cfg(not(target_arch = "wasm32"))]
 pub fn send_to_extension(_message: DevtoolsMessage) {
     // No-op
@@ -766,11 +951,18 @@ impl TimeTravelDebugger {
 
 /// Get current timestamp in milliseconds.
 fn current_timestamp_ms() -> u64 {
-    use std::time::SystemTime;
-    SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .map(|d| d.as_millis() as u64)
-        .unwrap_or(0)
+    #[cfg(target_arch = "wasm32")]
+    {
+        js_sys::Date::now() as u64
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use std::time::SystemTime;
+        SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0)
+    }
 }
 
 // ============================================================================
