@@ -18,6 +18,7 @@ leptos_actix = { version = "0.8", optional = true }
 leptos_meta = { version = "0.8", default-features = false }
 leptos_router = { version = "0.8", default-features = false }
 leptos-store = { path = "../..", default-features = false }
+serde = { version = "1.0", features = ["derive"] }
 
 # Server dependencies
 actix-files = { version = "0.6", optional = true }
