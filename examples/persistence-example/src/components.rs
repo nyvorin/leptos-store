@@ -14,48 +14,56 @@ use leptos_store::prelude::*;
 use crate::notes_store::NotesStore;
 
 #[cfg(feature = "hydrate")]
-use crate::notes_store::NotesState;
+use leptos::task::spawn_local;
 
 /// Main app component
 #[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
 
-    // Create and provide the notes store
+    // Create the notes store
     let store = NotesStore::new();
 
-    // Load from localStorage on mount (client-side only)
+    // Wrap with PersistentStore using LocalStorageAdapter (client-side only)
     #[cfg(feature = "hydrate")]
-    {
+    let persistent_store = {
+        let adapter = LocalStorageAdapter::new();
+        let ps = PersistentStore::new(store.clone(), adapter)
+            .with_key("notes_store")
+            .with_key_prefix("persistence_example")
+            .with_version(1);
+        
+        // Load persisted state on mount
+        let ps_load = ps.clone();
         let store_load = store.clone();
         Effect::new(move |_| {
-            if let Some(window) = web_sys::window() {
-                if let Ok(Some(storage)) = window.local_storage() {
-                    if let Ok(Some(data)) = storage.get_item("notes_store") {
-                        if let Ok(state) = serde_json::from_str::<NotesState>(&data) {
-                            store_load.load_state(state);
-                        }
-                    }
+            let ps = ps_load.clone();
+            let store = store_load.clone();
+            spawn_local(async move {
+                if let Ok(Some(state)) = ps.load().await {
+                    store.load_state(state);
                 }
-            }
+            });
         });
-    }
 
-    // Save to localStorage on state changes (client-side only)
-    #[cfg(feature = "hydrate")]
-    {
+        // Save state on changes (reactive effect tracks state changes)
+        let ps_save = ps.clone();
         let store_save = store.clone();
         Effect::new(move |_| {
-            let state = store_save.get_state();
-            if let Some(window) = web_sys::window() {
-                if let Ok(Some(storage)) = window.local_storage() {
-                    if let Ok(json) = serde_json::to_string(&state) {
-                        let _ = storage.set_item("notes_store", &json);
-                    }
-                }
-            }
+            // Track state changes by reading the state
+            let _state = store_save.get_state();
+            let ps = ps_save.clone();
+            spawn_local(async move {
+                let _ = ps.save().await;
+            });
         });
-    }
+
+        ps
+    };
+
+    // Provide the persistent store for context access
+    #[cfg(feature = "hydrate")]
+    provide_context(persistent_store);
 
     provide_store(store);
 
@@ -91,18 +99,24 @@ fn NotesPage() -> impl IntoView {
                 </div>
 
                 <div class="code-hint">
-                    <p>"Persistence with localStorage:"</p>
-                    <pre><code>{r#"// Load on mount
-Effect::new(move |_| {
-    if let Ok(Some(data)) = storage.get_item("notes") {
-        store.load_state(serde_json::from_str(&data)?);
+                    <p>"Using PersistentStore with LocalStorageAdapter:"</p>
+                    <pre><code>{r#"// Create a persistent store
+let adapter = LocalStorageAdapter::new();
+let persistent = PersistentStore::new(store, adapter)
+    .with_key("notes_store")
+    .with_key_prefix("my_app")
+    .with_version(1);
+
+// Load persisted state on mount
+spawn_local(async move {
+    if let Ok(Some(state)) = persistent.load().await {
+        store.load_state(state);
     }
 });
 
 // Save on changes
-Effect::new(move |_| {
-    let state = store.get_state();
-    storage.set_item("notes", &serde_json::to_string(&state)?);
+spawn_local(async move {
+    persistent.save().await;
 });"#}</code></pre>
                 </div>
             </div>
