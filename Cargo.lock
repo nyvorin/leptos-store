@@ -2073,6 +2073,7 @@ dependencies = [
  "actix-files",
  "actix-web",
  "console_error_panic_hook",
+ "js-sys",
  "leptos",
  "leptos-store",
  "leptos_actix",
