@@ -12,7 +12,7 @@ use leptos_router::{
 use leptos_store::prelude::*;
 
 #[cfg(feature = "hydrate")]
-use leptos_store::devtools::{DevtoolsConfig, StoreInspector, init_devtools};
+use leptos_store::devtools::{DevtoolsConfig, StoreInspector, init_devtools, register_store_json};
 
 use crate::counter_store::CounterStore;
 
@@ -29,6 +29,13 @@ pub fn App() -> impl IntoView {
 
     // Create and provide the counter store
     let store = CounterStore::new();
+    
+    // Register with devtools (client-side only)
+    #[cfg(feature = "hydrate")]
+    {
+        register_store_json(&store, "counter");
+    }
+    
     provide_store(store);
 
     view! {
@@ -51,14 +58,23 @@ pub fn App() -> impl IntoView {
 /// Devtools inspector wrapper (only renders in hydrate mode)
 #[component]
 fn DevtoolsInspector() -> impl IntoView {
-    #[cfg(feature = "hydrate")]
-    {
-        view! { <StoreInspector /> }.into_any()
-    }
+    // Use a signal that flips to true after hydration to avoid SSR/client mismatch
+    let is_mounted = RwSignal::new(false);
+    
+    // Set mounted to true after initial render (client-side only)
+    Effect::new(move |_| {
+        is_mounted.set(true);
+    });
 
-    #[cfg(not(feature = "hydrate"))]
-    {
-        ().into_any()
+    view! {
+        <Show when=move || is_mounted.get()>
+            {
+                #[cfg(feature = "hydrate")]
+                { view! { <StoreInspector /> } }
+                #[cfg(not(feature = "hydrate"))]
+                { view! { <div></div> } }
+            }
+        </Show>
     }
 }
 
