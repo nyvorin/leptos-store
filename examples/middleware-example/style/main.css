@@ -1,0 +1,333 @@
+/* Middleware Example Styles */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    min-height: 100vh;
+    color: #e0e0e0;
+}
+
+.app {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.task-page {
+    width: 100%;
+    max-width: 600px;
+}
+
+.task-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 2rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+h1 {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.subtitle {
+    text-align: center;
+    color: #888;
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+}
+
+/* Task Input */
+.task-input {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.task-input-field {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    font-size: 1rem;
+}
+
+.task-input-field::placeholder {
+    color: #666;
+}
+
+.task-input-field:focus {
+    outline: none;
+    border-color: #3a7bd5;
+}
+
+/* Buttons */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add {
+    background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+    color: #fff;
+}
+
+.btn-add:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 210, 255, 0.3);
+}
+
+.btn-clear {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #888;
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+}
+
+.btn-clear:hover {
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+}
+
+/* Task List */
+.task-list {
+    list-style: none;
+    margin-bottom: 1.5rem;
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background 0.2s;
+}
+
+.task-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.task-item.completed .task-title {
+    text-decoration: line-through;
+    color: #666;
+}
+
+.task-checkbox {
+    position: relative;
+    cursor: pointer;
+}
+
+.task-checkbox input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.checkmark {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.task-checkbox input:checked ~ .checkmark {
+    background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+    border-color: transparent;
+}
+
+.task-checkbox input:checked ~ .checkmark::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 12px;
+}
+
+.task-title {
+    flex: 1;
+}
+
+.btn-remove {
+    background: transparent;
+    border: none;
+    color: #666;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    opacity: 0;
+    transition: all 0.2s;
+}
+
+.task-item:hover .btn-remove {
+    opacity: 1;
+}
+
+.btn-remove:hover {
+    color: #ff6b6b;
+}
+
+/* Task Footer */
+.task-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 2rem;
+}
+
+.task-stats {
+    display: flex;
+    gap: 1rem;
+}
+
+.stat {
+    font-size: 0.85rem;
+    color: #888;
+}
+
+.stat strong {
+    color: #00d2ff;
+}
+
+.task-filters {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.filter-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: #888;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    color: #fff;
+}
+
+.filter-btn.active {
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #00d2ff;
+}
+
+/* Middleware Demo */
+.middleware-demo {
+    background: rgba(0, 210, 255, 0.1);
+    border: 1px solid rgba(0, 210, 255, 0.3);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.middleware-demo h3 {
+    color: #00d2ff;
+    margin-bottom: 0.5rem;
+}
+
+.demo-desc {
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.btn-demo {
+    background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+    color: #fff;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.btn-demo:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 210, 255, 0.4);
+}
+
+.log-output {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.log-label {
+    font-size: 0.75rem;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
+.log-messages {
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.8rem;
+    min-height: 80px;
+}
+
+.log-msg {
+    color: #00d2ff;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.demo-hint {
+    color: #f7971e;
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+/* Code Hint */
+.code-hint {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.code-hint p {
+    color: #888;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
+.code-hint pre {
+    overflow-x: auto;
+}
+
+.code-hint code {
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.75rem;
+    color: #a0e0a0;
+    white-space: pre;
+}
