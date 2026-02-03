@@ -381,25 +381,34 @@ where
         });
     }
     
-    // Set up automatic state change tracking (WASM only)
+    // Set up automatic state change tracking with snapshots (WASM only)
     #[cfg(target_arch = "wasm32")]
     {
         let state_signal = store.state();
         let key_for_effect = key.clone();
         let name_for_effect = store_name;
-        Effect::new(move |prev: Option<()>| {
-            // Read the state to track changes
-            let _ = state_signal.get();
+        Effect::new(move |prev_state: Option<String>| {
+            // Get current state as Debug string
+            let current_state = format!("{:#?}", state_signal.get());
             
-            // Don't record on first run (initial state)
-            if prev.is_some() {
+            // Record event with old and new state (skip first run)
+            if let Some(old_state) = prev_state {
+                // Escape strings for JSON
+                let old_escaped = old_state.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', "\\n");
+                let new_escaped = current_state.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', "\\n");
+                
                 record_event(DevtoolsEvent {
                     event_type: "StateChanged".to_string(),
                     store_name: Some(name_for_effect.clone()),
-                    payload: format!(r#"{{"store":"{}"}}"#, key_for_effect),
+                    payload: format!(
+                        r#"{{"store":"{}","old":"{}","new":"{}"}}"#,
+                        key_for_effect, old_escaped, new_escaped
+                    ),
                     timestamp: current_timestamp_ms(),
                 });
             }
+            
+            current_state
         });
     }
 }
@@ -449,25 +458,31 @@ where
         });
     }
     
-    // Set up automatic state change tracking (WASM only)
+    // Set up automatic state change tracking with JSON snapshots (WASM only)
     #[cfg(target_arch = "wasm32")]
     {
         let state_signal = store.state();
         let key_for_effect = key.clone();
         let name_for_effect = store_name;
-        Effect::new(move |prev: Option<()>| {
-            // Read the state to track changes
-            let _ = state_signal.get();
+        Effect::new(move |prev_json: Option<String>| {
+            // Serialize current state to JSON
+            let current_json = serde_json::to_string(&state_signal.get())
+                .unwrap_or_else(|_| "{}".to_string());
             
-            // Don't record on first run (initial state)
-            if prev.is_some() {
+            // Record event with old and new JSON state (skip first run)
+            if let Some(old_json) = prev_json {
                 record_event(DevtoolsEvent {
                     event_type: "StateChanged".to_string(),
                     store_name: Some(name_for_effect.clone()),
-                    payload: format!(r#"{{"store":"{}"}}"#, key_for_effect),
+                    payload: format!(
+                        r#"{{"store":"{}","old":{},"new":{}}}"#,
+                        key_for_effect, old_json, current_json
+                    ),
                     timestamp: current_timestamp_ms(),
                 });
             }
+            
+            current_json
         });
     }
 }
