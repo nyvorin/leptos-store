@@ -29,7 +29,7 @@ hydrate = ["dep:serde", "dep:serde_json", "dep:web-sys", "dep:wasm-bindgen"]
 csr = []
 
 # New features for extended functionality
-middleware = []
+middleware = ["dep:js-sys"]
 devtools = ["middleware", "dep:js-sys"]
 tracing = ["middleware", "dep:tracing"]
 persist-web = ["dep:web-sys", "dep:wasm-bindgen", "dep:base64"]
@@ -63,4 +63,14 @@ rustdoc-args = ["--cfg", "docsrs"]
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 [workspace]
-members = [".", "examples/counter-example", "examples/auth-store-example", "examples/token-explorer-example"]
+members = [
+    ".",
+    "examples/counter-example",
+    "examples/auth-store-example",
+    "examples/token-explorer-example",
+    "examples/middleware-example",
+    "examples/persistence-example",
+    "examples/composition-example",
+    "examples/feature-flags-example",
+    "examples/devtools-example",
+]
