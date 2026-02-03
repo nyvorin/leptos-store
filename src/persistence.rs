@@ -28,7 +28,7 @@
 //! ```
 
 use crate::store::Store;
-use leptos::prelude::Get;
+use leptos::prelude::{Get, GetUntracked};
 use std::collections::HashMap;
 use std::fmt;
 use std::future::Future;
@@ -74,7 +74,12 @@ pub enum PersistError {
 
     /// Version mismatch during migration.
     #[error("Version mismatch: expected {expected}, found {found}")]
-    VersionMismatch { expected: u32, found: u32 },
+    VersionMismatch {
+        /// The expected version number.
+        expected: u32,
+        /// The actual version number found.
+        found: u32,
+    },
 
     /// Internal error.
     #[error("Internal error: {0}")]
@@ -123,7 +128,15 @@ impl fmt::Display for StorageType {
 // ============================================================================
 
 /// Future type for async persistence operations.
+/// 
+/// On native targets, this requires `Send` for thread safety.
+/// On WASM, `Send` is not required (single-threaded environment).
+#[cfg(not(target_arch = "wasm32"))]
 pub type PersistFuture<'a, T> = Pin<Box<dyn Future<Output = PersistResult<T>> + Send + 'a>>;
+
+/// Future type for async persistence operations (WASM version).
+#[cfg(target_arch = "wasm32")]
+pub type PersistFuture<'a, T> = Pin<Box<dyn Future<Output = PersistResult<T>> + 'a>>;
 
 /// Trait for persistence adapters.
 ///
@@ -570,7 +583,8 @@ where
 {
     /// Save the current state to storage.
     pub async fn save(&self) -> PersistResult<()> {
-        let state = self.inner.state().get();
+        // Use get_untracked() since we're in an async context without reactive tracking
+        let state = self.inner.state().get_untracked();
         let persisted = PersistedState::new(state, self.config.version);
 
         let data = serde_json::to_vec(&persisted)
@@ -1062,11 +1076,18 @@ impl PersistenceAdapter for ServerSyncAdapter {
 
 /// Get current timestamp in milliseconds.
 fn current_timestamp_ms() -> u64 {
-    use std::time::SystemTime;
-    SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .map(|d| d.as_millis() as u64)
-        .unwrap_or(0)
+    #[cfg(target_arch = "wasm32")]
+    {
+        js_sys::Date::now() as u64
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use std::time::SystemTime;
+        SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0)
+    }
 }
 
 /// Base64 encode data.
@@ -1093,7 +1114,7 @@ fn base64_decode(data: &str) -> Result<Vec<u8>, String> {
 // ============================================================================
 
 /// Implement Serialize and Deserialize for PersistedState.
-#[cfg(feature = "hydrate")]
+#[cfg(any(feature = "hydrate", feature = "persist-web"))]
 impl<State: serde::Serialize> serde::Serialize for PersistedState<State> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -1108,7 +1129,7 @@ impl<State: serde::Serialize> serde::Serialize for PersistedState<State> {
     }
 }
 
-#[cfg(feature = "hydrate")]
+#[cfg(any(feature = "hydrate", feature = "persist-web"))]
 impl<'de, State: serde::Deserialize<'de>> serde::Deserialize<'de> for PersistedState<State> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
