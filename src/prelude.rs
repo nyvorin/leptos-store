@@ -63,7 +63,7 @@ pub use crate::context::{
 #[cfg(feature = "middleware")]
 #[cfg_attr(docsrs, doc(cfg(feature = "middleware")))]
 pub use crate::middleware::{
-    ActionContext, ActionResult as MiddlewareActionResult, ContextMetadata, EventBus,
+    ActionContext, ActionResult as MiddlewareActionResult, ContextMetadata, CrossInstant, EventBus,
     EventSubscriber, LogLevel, LoggingConfig, LoggingMiddleware, Middleware, MiddlewareChain,
     MiddlewareContext, MiddlewareError, MiddlewareResult, MiddlewareStore, MutationResult,
     StoreEvent, TimingMiddleware, ValidationMiddleware,
