@@ -206,7 +206,7 @@ fn NoteEditor() -> impl IntoView {
                             <input
                                 type="text"
                                 class="editor-title"
-                                value=note.title.clone()
+                                prop:value=note.title.clone()
                                 on:input=move |ev| {
                                     let title = event_target_value(&ev);
                                     if let Some(current) = st.selected_note() {
