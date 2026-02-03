@@ -1,0 +1,74 @@
+[package]
+name = "feature-flags-example"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "feature-flags-example"
+path = "src/main.rs"
+
+[dependencies]
+leptos = { version = "0.8", default-features = false }
+leptos_actix = { version = "0.8", optional = true }
+leptos_meta = { version = "0.8", default-features = false }
+leptos_router = { version = "0.8", default-features = false }
+leptos-store = { path = "../..", default-features = false }
+serde = { version = "1.0", features = ["derive"] }
+
+# Server dependencies
+actix-files = { version = "0.6", optional = true }
+actix-web = { version = "4", optional = true }
+tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
+
+# Client dependencies
+wasm-bindgen = { version = "=0.2.108", optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
+
+[features]
+default = []
+ssr = [
+    "dep:actix-files",
+    "dep:actix-web",
+    "dep:tokio",
+    "dep:leptos_actix",
+    "leptos/ssr",
+    "leptos_meta/ssr",
+    "leptos_router/ssr",
+    "leptos-store/ssr",
+    "leptos-store/templates",
+]
+hydrate = [
+    "dep:wasm-bindgen",
+    "dep:console_error_panic_hook",
+    "leptos/hydrate",
+    "leptos-store/hydrate",
+    "leptos-store/templates",
+]
+csr = [
+    "dep:wasm-bindgen",
+    "dep:console_error_panic_hook",
+    "leptos/csr",
+    "leptos-store/csr",
+    "leptos-store/templates",
+]
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[package.metadata.leptos]
+output-name = "feature-flags-example"
+site-root = "target/site"
+site-pkg-dir = "pkg"
+site-addr = "127.0.0.1:3040"
+reload-port = 3041
+style-file = "style/main.css"
+bin-features = ["ssr"]
+lib-features = ["hydrate"]
+hash-files = false
+lib-profile-release = "release"
+bin-profile-release = "release"
