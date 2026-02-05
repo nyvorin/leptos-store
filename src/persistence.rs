@@ -146,8 +146,8 @@ pub type PersistFuture<'a, T> = Pin<Box<dyn Future<Output = PersistResult<T>> + 
 ///
 /// # Example
 ///
-/// ```rust,ignore
-/// use leptos_store::persistence::*;
+/// ```rust,no_run
+/// use leptos_store::persistence::{PersistenceAdapter, PersistFuture, StorageType};
 ///
 /// struct MyAdapter;
 ///
