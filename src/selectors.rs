@@ -310,4 +310,20 @@ mod tests {
         let non_zero = filter_selector(count, |c| *c != 0);
         assert_eq!(non_zero.get(), None);
     }
+
+    #[test]
+    fn test_selector_macro() {
+        use crate::selector;
+
+        let store = TestStore::new(7, "Eve");
+
+        selector! {
+            store: &store,
+            count_val: |s: &TestState| -> i32 { s.count },
+            name_val: |s: &TestState| -> String { s.name.clone() },
+        }
+
+        assert_eq!(count_val.get(), 7);
+        assert_eq!(name_val.get(), "Eve");
+    }
 }

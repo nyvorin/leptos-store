@@ -1268,6 +1268,45 @@ macro_rules! define_mutator {
 }
 
 // ============================================================================
+// selector! macro
+// ============================================================================
+
+/// Create multiple memoized selectors from a store in one declaration.
+///
+/// Each selector extracts a specific slice of state and only re-computes
+/// when that slice changes.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use leptos_store::prelude::*;
+///
+/// selector! {
+///     store: &my_store,
+///     user_name: |s: &MyState| -> String { s.user.name.clone() },
+///     is_admin: |s: &MyState| -> bool { s.user.role == Role::Admin },
+///     item_count: |s: &MyState| -> usize { s.cart.items.len() },
+/// }
+///
+/// // Now use them as Memo<T> values:
+/// view! { <p>{user_name}</p> }
+/// ```
+#[macro_export]
+macro_rules! selector {
+    (
+        store: $store:expr,
+        $($name:ident : |$param:ident : &$state_ty:ty| -> $ret_ty:ty $body:block),+ $(,)?
+    ) => {
+        $(
+            let $name: ::leptos::prelude::Memo<$ret_ty> = $crate::selectors::create_selector(
+                $store,
+                |$param: &$state_ty| -> $ret_ty { $body },
+            );
+        )+
+    };
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 
