@@ -136,6 +136,7 @@ pub mod r#async;
 pub mod context;
 pub mod macros;
 pub mod store;
+pub mod selectors;
 
 #[cfg(feature = "hydrate")]
 pub mod hydration;

@@ -44,6 +44,9 @@ pub use crate::composition::{
     StoreDependency, StoreGroup, provide_root_store, use_root_store,
 };
 
+// Selectors (always available)
+pub use crate::selectors::{combine_selectors, create_selector, filter_selector, map_selector};
+
 // Hydration support (when feature is enabled)
 #[cfg(feature = "hydrate")]
 #[cfg_attr(docsrs, doc(cfg(feature = "hydrate")))]
