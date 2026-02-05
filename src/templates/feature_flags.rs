@@ -234,8 +234,8 @@ impl FeatureFlagState {
 ///
 /// # Example
 ///
-/// ```rust,ignore
-/// use leptos_store::templates::feature_flags::*;
+/// ```rust
+/// use leptos_store::templates::feature_flags::{FeatureFlagStore, FeatureFlag};
 ///
 /// let store = FeatureFlagStore::new();
 ///
