@@ -41,24 +41,30 @@ pub fn App() -> impl IntoView {
     // Provides context for <Title> and <Meta> components
     provide_meta_context();
 
-    // Create and provide the auth store
-    // With hydration: uses `provide_hydrated_store` which:
-    //   1. On server: Creates store and embeds serialized state
-    //   2. On client: Reads embedded state and restores the store
-    // Without hydration: just provides the store to context
-    let store = AuthStore::new();
-
+    // On SSR: Store is provided by main.rs before rendering App
+    // On hydrate (client): Read from hydration script and provide to context
     #[cfg(feature = "hydrate")]
     {
-        // Hydration-aware store provision
-        // This will attempt to restore state from server-rendered HTML
-        provide_hydrated_store(store);
-    }
+        use crate::auth_store::AuthState;
+        use leptos_store::hydration::{has_hydration_data, read_hydration_data};
 
-    #[cfg(not(feature = "hydrate"))]
-    {
-        // Standard store provision (CSR or non-hydration SSR)
-        provide_store(store);
+        // Try to hydrate from server-rendered data
+        if has_hydration_data("auth_store") {
+            if let Ok(data) = read_hydration_data("auth_store") {
+                if let Ok(state) = serde_json::from_str::<AuthState>(&data) {
+                    let store = AuthStore::with_state(state);
+                    provide_store(store);
+                } else {
+                    // Fallback to fresh store
+                    provide_store(AuthStore::new());
+                }
+            } else {
+                provide_store(AuthStore::new());
+            }
+        } else {
+            // No hydration data (CSR mode)
+            provide_store(AuthStore::new());
+        }
     }
 
     view! {

@@ -518,6 +518,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "composition-example"
+version = "0.1.0"
+dependencies = [
+ "actix-files",
+ "actix-web",
+ "console_error_panic_hook",
+ "leptos",
+ "leptos-store",
+ "leptos_actix",
+ "leptos_meta",
+ "leptos_router",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "concurrent-queue"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -697,6 +714,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "csr-example"
+version = "0.1.0"
+dependencies = [
+ "actix-files",
+ "actix-web",
+ "console_error_panic_hook",
+ "leptos",
+ "leptos-store",
+ "leptos_actix",
+ "leptos_meta",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "dashmap"
 version = "6.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -751,6 +784,24 @@ dependencies = [
  "rustc_version",
  "syn",
  "unicode-xid",
+]
+
+[[package]]
+name = "devtools-example"
+version = "0.1.0"
+dependencies = [
+ "actix-files",
+ "actix-web",
+ "console_error_panic_hook",
+ "leptos",
+ "leptos-store",
+ "leptos_actix",
+ "leptos_meta",
+ "leptos_router",
+ "serde",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
 ]
 
 [[package]]
@@ -852,6 +903,24 @@ checksum = "8be9f3dfaaffdae2972880079a491a1a8bb7cbed0b8dd7a347f668b4150a3b93"
 dependencies = [
  "event-listener",
  "pin-project-lite",
+]
+
+[[package]]
+name = "feature-flags-example"
+version = "0.1.0"
+dependencies = [
+ "actix-files",
+ "actix-web",
+ "console_error_panic_hook",
+ "leptos",
+ "leptos-store",
+ "leptos_actix",
+ "leptos_meta",
+ "leptos_router",
+ "serde",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
 ]
 
 [[package]]
@@ -1538,13 +1607,17 @@ dependencies = [
 name = "leptos-store"
 version = "0.4.1"
 dependencies = [
+ "base64",
  "futures",
+ "js-sys",
  "leptos",
+ "paste",
  "pin-project-lite",
  "serde",
  "serde_json",
  "thiserror 2.0.17",
  "tokio",
+ "tracing",
  "wasm-bindgen",
  "wasm-bindgen-test",
  "web-sys",
@@ -1824,6 +1897,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
 
 [[package]]
+name = "middleware-example"
+version = "0.1.0"
+dependencies = [
+ "actix-files",
+ "actix-web",
+ "console_error_panic_hook",
+ "leptos",
+ "leptos-store",
+ "leptos_actix",
+ "leptos_meta",
+ "leptos_router",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
+ "web-sys",
+]
+
+[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1992,6 +2083,27 @@ name = "percent-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
+
+[[package]]
+name = "persistence-example"
+version = "0.1.0"
+dependencies = [
+ "actix-files",
+ "actix-web",
+ "console_error_panic_hook",
+ "js-sys",
+ "leptos",
+ "leptos-store",
+ "leptos_actix",
+ "leptos_meta",
+ "leptos_router",
+ "serde",
+ "serde_json",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
+ "web-sys",
+]
 
 [[package]]
 name = "pin-project"
@@ -2557,6 +2669,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "selectors-example"
+version = "0.1.0"
+dependencies = [
+ "actix-files",
+ "actix-web",
+ "console_error_panic_hook",
+ "leptos",
+ "leptos-store",
+ "leptos_actix",
+ "leptos_meta",
+ "leptos_router",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "semver"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2723,6 +2852,25 @@ name = "shlex"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
+
+[[package]]
+name = "showcase"
+version = "0.1.0"
+dependencies = [
+ "actix-files",
+ "actix-web",
+ "console_error_panic_hook",
+ "leptos",
+ "leptos-store",
+ "leptos_actix",
+ "leptos_meta",
+ "leptos_router",
+ "serde",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
+ "web-sys",
+]
 
 [[package]]
 name = "signal-hook-registry"

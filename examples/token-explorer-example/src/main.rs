@@ -53,7 +53,7 @@ async fn main() -> std::io::Result<()> {
                     // Serialize empty store state for hydration
                     // The client will immediately fetch fresh data
                     let hydration_data = {
-                        let json = serde_json::to_string(&store.state.get_untracked())
+                        let json = serde_json::to_string(&store.get_state_untracked())
                             .unwrap_or_default();
                         let escaped = json.replace("</script>", "<\\/script>");
                         format!(

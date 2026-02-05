@@ -10,9 +10,10 @@
 async fn main() -> std::io::Result<()> {
     use actix_files::Files;
     use actix_web::*;
-    use auth_store_example::components::App;
+    use auth_store_example::{AuthStore, components::App};
     use leptos::prelude::*;
     use leptos_actix::{LeptosRoutes, generate_route_list};
+    use leptos_store::context::provide_store;
 
     // Set defaults for manual mode if env vars aren't set (cargo-leptos sets these)
     // SAFETY: We're single-threaded at this point before any async work starts
@@ -40,13 +41,30 @@ async fn main() -> std::io::Result<()> {
         // Generate the list of routes
         let routes = generate_route_list(App);
 
-        App::new()
+        actix_web::App::new()
             // Serve static files from the `pkg` directory
             .service(Files::new("/pkg", format!("{site_root}/pkg")))
             // Leptos routes
             .leptos_routes(routes, {
                 let leptos_options = leptos_options.clone();
                 move || {
+                    // Create store for this request
+                    let store = AuthStore::new();
+
+                    // Serialize store state for hydration
+                    let hydration_data = {
+                        let json = serde_json::to_string(&store.get_state_untracked())
+                            .unwrap_or_default();
+                        let escaped = json.replace("</script>", "<\\/script>");
+                        format!(
+                            r#"<script id="__leptos_store_auth_store" type="application/json">{}</script>"#,
+                            escaped
+                        )
+                    };
+
+                    // Provide store to context
+                    provide_store(store);
+
                     view! {
                         <!DOCTYPE html>
                         <html lang="en">
@@ -59,6 +77,7 @@ async fn main() -> std::io::Result<()> {
                             </head>
                             <body>
                                 <App/>
+                                <div inner_html=hydration_data />
                             </body>
                         </html>
                     }

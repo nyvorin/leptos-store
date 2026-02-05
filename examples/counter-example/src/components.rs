@@ -53,21 +53,21 @@ fn CounterPage() -> impl IntoView {
                 <Counter />
 
                 <div class="code-hint">
-                    <p>"Using the " <code>"store!"</code> " macro:"</p>
+                    <p>"Using the " <code>"store!"</code> " macro (Enterprise Mode):"</p>
                     <pre><code>{r#"store! {
     pub CounterStore {
-        state CounterState {
-            count: i32 = 0,
-        }
+        state CounterState { count: i32 = 0 }
+
         getters {
-            doubled(this) -> i32 {
-                this.read(|s| s.count * 2)
-            }
+            doubled(this) -> i32 { this.read(|s| s.count * 2) }
         }
-        mutators {
-            increment(this) {
-                this.mutate(|s| s.count += 1);
-            }
+
+        mutators {  // PRIVATE - internal only
+            add_to_count(this, n: i32) { this.mutate(|s| s.count += n); }
+        }
+
+        actions {   // PUBLIC - external API
+            increment(this) { this.add_to_count(1); }
         }
     }
 }"#}</code></pre>

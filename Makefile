@@ -6,7 +6,7 @@
 
 .PHONY: all build check test test-all clippy fmt fmt-check doc doc-open \
         clean example example-build example-release publish publish-dry \
-        deps audit outdated help examples-list run build-example build-example-release \
+        deps audit outdated help examples-list run showcase build-example build-example-release \
         test-example-pkg check-example clean-example test-all-examples \
         check-all-examples clean-all-examples
 
@@ -201,6 +201,16 @@ run: example-setup leptos-install
 	echo "$(CYAN)Starting $(NAME) (SSR mode)...$(RESET)"; \
 	echo "$(YELLOW)Open http://127.0.0.1:$$port in your browser$(RESET)"; \
 	cd examples/$(NAME) && cargo leptos watch
+
+## Run the Examples Showcase (unified gallery of all examples)
+showcase: example-setup leptos-install
+	@echo "$(CYAN)Starting Examples Showcase...$(RESET)"
+	@echo "$(YELLOW)Open http://127.0.0.1:3100 in your browser$(RESET)"
+	@echo ""
+	@echo "$(GREEN)Note: Individual examples must be running for links to work.$(RESET)"
+	@echo "$(GREEN)Use 'make run NAME=<example>' in separate terminals.$(RESET)"
+	@echo ""
+	cd examples/showcase && cargo leptos watch
 
 ## Build an example by name (SSR mode)
 ## Usage: make build-example NAME=token-explorer-example
@@ -616,6 +626,7 @@ help:
 	@echo ""
 	@echo "$(GREEN)Examples (Generic - use NAME=<example>):$(RESET)"
 	@echo "  examples-list        List all available examples"
+	@echo "  showcase             Run the Examples Showcase (gallery)"
 	@echo "  run                  Run example (make run NAME=token-explorer-example)"
 	@echo "  build-example        Build example (make build-example NAME=...)"
 	@echo "  build-example-release Build example in release mode"

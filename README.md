@@ -30,7 +30,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-leptos-store = "0.1"
+leptos-store = "0.2"
 leptos = "0.8"
 ```
 
@@ -41,6 +41,9 @@ leptos = "0.8"
 | `ssr` | ✅ Yes | Server-side rendering support |
 | `hydrate` | ❌ No | SSR hydration with automatic state serialization and transfer |
 | `csr` | ❌ No | Client-side rendering only (no SSR) |
+| `middleware` | ❌ No | Middleware system, audit trail, store coordination |
+| `devtools` | ❌ No | DevTools integration with time-travel debugging |
+| `persist-web` | ❌ No | Browser-based state persistence (localStorage/sessionStorage) |
 
 #### Basic Usage (SSR without Hydration)
 
@@ -48,7 +51,7 @@ The `ssr` feature is enabled by default. For basic SSR without state hydration:
 
 ```toml
 [dependencies]
-leptos-store = "0.1"
+leptos-store = "0.2"
 ```
 
 #### Full SSR with Hydration (Recommended for Production)
@@ -57,7 +60,7 @@ For full SSR applications where state needs to transfer from server to client, e
 
 ```toml
 [dependencies]
-leptos-store = { version = "0.1", default-features = false }
+leptos-store = { version = "0.2", default-features = false }
 
 [features]
 ssr = ["leptos-store/ssr", "leptos/ssr"]
@@ -76,12 +79,40 @@ For SPAs without server rendering:
 
 ```toml
 [dependencies]
-leptos-store = { version = "0.1", default-features = false, features = ["csr"] }
+leptos-store = { version = "0.2", default-features = false, features = ["csr"] }
 ```
+
+### Deployment Models
+
+| Model | Feature Flag | Description | Best For |
+|-------|-------------|-------------|----------|
+| **SSR** | `ssr` (default) | Store created per-request on server, HTML rendered with initial state | SEO, fast initial paint |
+| **Hydrate** | `hydrate` | Server renders AND serializes state; client picks up seamlessly | Full-stack apps with dynamic data |
+| **CSR** | `csr` | Store created once in the browser; no server, no hydration | SPAs, static sites, prototypes |
+
+**CSR Quick Start:**
+
+```rust
+use leptos::prelude::*;
+use leptos_store::prelude::*;
+
+// In CSR mode, just create and provide — no server needed
+let store = MyStore::new();
+provide_store(store);
+// Or use the CSR helper:
+// mount_csr_store(store);
+```
+
+> **Feature flag conflicts:** `csr` and `ssr` should not both be enabled. `hydrate` implies `ssr` behavior on the server side.
 
 ## Quick Start
 
-### Define Your Store
+### Define Your Store (Enterprise Mode)
+
+The library enforces the **Enterprise Mode** pattern:
+- **Getters**: Public, read-only derived values
+- **Mutators**: Private, internal state modification only
+- **Actions**: Public, the only external API for writes
 
 ```rust
 use leptos::prelude::*;
@@ -96,7 +127,7 @@ pub struct CounterState {
 // Define your store
 #[derive(Clone)]
 pub struct CounterStore {
-    state: RwSignal<CounterState>,
+    state: RwSignal<CounterState>,  // Private field
 }
 
 impl CounterStore {
@@ -106,22 +137,31 @@ impl CounterStore {
         }
     }
 
-    // Getters - derived, read-only values
+    // Getters - PUBLIC, derived read-only values
     pub fn doubled(&self) -> i32 {
         self.state.with(|s| s.count * 2)
     }
 
-    // Mutators - pure, synchronous state changes
+    // Mutators - PRIVATE, internal state changes
+    fn set_count(&self, value: i32) {
+        self.state.update(|s| s.count = value);
+    }
+
+    fn add_to_count(&self, delta: i32) {
+        self.state.update(|s| s.count += delta);
+    }
+
+    // Actions - PUBLIC, the external API for writes
     pub fn increment(&self) {
-        self.state.update(|s| s.count += 1);
+        self.add_to_count(1);
     }
 
     pub fn decrement(&self) {
-        self.state.update(|s| s.count -= 1);
+        self.add_to_count(-1);
     }
 
-    pub fn set_count(&self, value: i32) {
-        self.state.update(|s| s.count = value);
+    pub fn reset(&self) {
+        self.set_count(0);
     }
 }
 
@@ -182,22 +222,33 @@ store! {
             }
         }
 
+        // PRIVATE - internal state changes only
         mutators {
-            increment(this) {
-                this.mutate(|s| s.count += 1);
-            }
-            decrement(this) {
-                this.mutate(|s| s.count -= 1);
-            }
             set_count(this, value: i32) {
                 this.mutate(|s| s.count = value);
+            }
+            add_to_count(this, delta: i32) {
+                this.mutate(|s| s.count += delta);
+            }
+        }
+
+        // PUBLIC - external API for writes
+        actions {
+            increment(this) {
+                this.add_to_count(1);
+            }
+            decrement(this) {
+                this.add_to_count(-1);
+            }
+            reset(this) {
+                this.set_count(0);
             }
         }
     }
 }
 ```
 
-> **Note**: Use `this` (or any identifier) instead of `self` in getter/mutator bodies due to Rust 2024 macro hygiene rules. The macro provides `this.read()` for getters and `this.mutate()` for mutators.
+> **Note**: Use `this` (or any identifier) instead of `self` in getter/mutator/action bodies due to Rust 2024 macro hygiene rules. The macro provides `this.read()` for getters and `this.mutate()` for mutators. Mutators are **private** - external code must use public **actions**.
 
 ## Available Macros
 
@@ -210,6 +261,9 @@ store! {
 | `impl_store!` | Implement Store trait for an existing type | - |
 | `impl_hydratable_store!` | Implement HydratableStore trait | `hydrate` |
 | `store!` | Complete store definition in one macro | - |
+| `selector!` | Batch-create multiple selectors from a store | - |
+| `namespace!` | Define typed namespace combining multiple stores | - |
+| `derive_state_diff!` | Generate `StateDiff` impl for field-level diffing | `middleware` |
 
 ### `define_state!` - State with Defaults
 
@@ -347,6 +401,70 @@ impl AsyncAction<AuthStore> for LoginAction {
 }
 ```
 
+**Lifecycle:** Every async action follows: `Idle → Pending → Success | Error`
+
+- **Idle**: Initial state, no operation in progress
+- **Pending**: Operation dispatched, awaiting result; use for loading indicators
+- **Success**: Operation completed; result available via `ActionHandle`
+- **Error**: Operation failed; error available for display or retry
+
+**Loading state in components:**
+
+```rust
+let handle = store.dispatch_async(FetchUsersAction { page: 1 });
+
+view! {
+    {move || match handle.state().get() {
+        ActionState::Idle => view! { <p>"Ready"</p> }.into_any(),
+        ActionState::Pending => view! { <p>"Loading..."</p> }.into_any(),
+        ActionState::Success => view! { <p>"Loaded!"</p> }.into_any(),
+        ActionState::Error => view! { <p>"Failed. Try again."</p> }.into_any(),
+    }}
+}
+```
+
+**Cancellation:** Call `handle.cancel()` to abort an in-flight async action. The state transitions to `Idle` and any pending future is dropped.
+
+### Selectors — Fine-Grained Reactivity
+
+Selectors create memoized views into specific slices of store state. Unlike reading the full state signal, selectors only trigger re-renders when their particular slice changes.
+
+```rust
+use leptos_store::prelude::*;
+
+let store = use_store::<DashboardStore>();
+
+// Extract a single slice — only re-computes when user_name changes
+let user_name = create_selector(&store, |s| s.user_name.clone());
+
+// Combine two selectors into a derived value
+let item_count = create_selector(&store, |s| s.cart_items.len());
+let discount = create_selector(&store, |s| s.cart_discount);
+let total = combine_selectors(item_count, discount, |count, disc| {
+    let subtotal = *count as f64 * 9.99;
+    subtotal * (1.0 - disc / 100.0)
+});
+
+// Transform a selector's output
+let badge = map_selector(item_count, |n| format!("{n} items"));
+
+// Only propagate when a condition is met
+let active_items = filter_selector(item_count, |n| *n > 0);
+// Returns Memo<Option<usize>> — None when cart is empty
+```
+
+**Batch declaration with `selector!` macro:**
+
+```rust
+selector! {
+    store: &my_store,
+    user_name: |s: &AppState| -> String { s.user.name.clone() },
+    is_admin: |s: &AppState| -> bool { s.user.role == Role::Admin },
+    cart_total: |s: &AppState| -> f64 { s.cart.items.iter().map(|i| i.price).sum() },
+}
+// Generates: let user_name: Memo<String>, let is_admin: Memo<bool>, etc.
+```
+
 ### Scoped Stores
 
 For multiple instances of the same store type:
@@ -360,6 +478,107 @@ provide_scoped_store::<CounterStore, 2>(counter2);
 let counter1 = use_scoped_store::<CounterStore, 1>();
 let counter2 = use_scoped_store::<CounterStore, 2>();
 ```
+
+### Multiple Namespaced Stores
+
+For large applications with many domain stores, use the `namespace!` macro to create a typed container with generated context helpers:
+
+```rust
+use leptos_store::namespace;
+
+namespace! {
+    pub AppStores {
+        user: UserStore,
+        products: ProductStore,
+        cart: CartStore,
+        orders: OrderStore,
+        ui: UiStore,
+    }
+}
+
+// Generated API:
+// AppStores::new(user, products, cart, orders, ui)
+// app_stores.user() -> &UserStore
+// provide_app_stores(stores) — wraps provide_context
+// use_app_stores() -> AppStores — wraps use_context
+```
+
+**Domain boundary guidelines:**
+- **One domain = one store** — `UserStore` owns auth + profile + preferences
+- **Stores communicate via `StoreCoordinator`**, not direct references
+- **Shared state** (theme, locale) goes in a `UiStore`; domain-specific state stays in its own store
+- **Module organization:** `stores/user/mod.rs`, `stores/cart/mod.rs`, etc.
+
+### Audit Trail (requires `middleware` feature)
+
+Track every state mutation with field-level diffs, user context, and state replay:
+
+```rust
+use leptos_store::prelude::*;
+
+// Create audit trail
+let audit = AuditTrail::<MyState>::new()
+    .with_max_entries(1000)
+    .with_user_context(|| AuditUserContext {
+        user_id: Some("admin".into()),
+        session_id: None,
+        ip_address: None,
+        metadata: Default::default(),
+    });
+
+// Record a mutation with automatic diff
+let before = old_state.clone();
+let after = new_state.clone();
+audit.record_with_diff("update_profile", None, before, after);
+
+// Query audit entries
+let recent = audit.entries_since(timestamp);
+let profile_changes = audit.entries_for_mutation("update_profile");
+
+// Replay: get state at any point in history
+let historical_state = audit.state_at(entry_id);
+```
+
+**Field-level diffs with `derive_state_diff!`:**
+
+```rust
+use leptos_store::derive_state_diff;
+
+derive_state_diff! {
+    pub struct UserState {
+        pub name: String,
+        pub email: String,
+        pub role: String,
+    }
+}
+// Generates StateDiff impl — diff() returns Vec<FieldChange>
+// Each FieldChange has: field_path, old_value, new_value, change_type
+```
+
+### Cross-Store Coordination (requires `middleware` feature)
+
+Coordinate reactive dependencies between stores with `StoreCoordinator`:
+
+```rust
+use leptos_store::prelude::*;
+
+let mut coordinator = StoreCoordinator::new();
+
+// When auth store changes, clear the inventory cache
+coordinator.on_change(&auth_store, &inventory_store, |target, event| {
+    target.clear_cache();
+});
+
+// When a specific mutation fires, react in another store
+coordinator.on_mutation(&inventory_store, "update_stock", &notification_store, |target| {
+    target.add_notification("Stock updated".into());
+});
+
+// Start listening after all rules are registered
+coordinator.activate();
+```
+
+The coordinator is stateless (just rules) — on hydration, re-register the same rules client-side.
 
 ### Store Registry
 
@@ -468,6 +687,13 @@ See the `examples/` directory for complete examples:
 - `counter-example` - **Simple counter** using the `store!` macro with increment/decrement
 - `auth-store-example` - User authentication flow with login/logout
 - `token-explorer-example` - **Full SSR with hydration** - Real-time Solana token explorer using Jupiter API
+- `csr-example` - **CSR-only** todo list demonstrating client-side store initialization
+- `selectors-example` - **Fine-grained reactivity** with selectors, combinators, and the `selector!` macro
+- `middleware-example` - Middleware pipeline with logging, validation, and event bus
+- `composition-example` - Multi-store composition with `RootStore` builder
+- `persistence-example` - State persistence across page reloads
+- `feature-flags-example` - Feature flag management store
+- `devtools-example` - DevTools integration with time-travel debugging
 
 ### Running Examples
 

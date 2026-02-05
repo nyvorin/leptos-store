@@ -37,6 +37,9 @@
 //! | `ssr` | ✅ Yes | Server-side rendering support |
 //! | `hydrate` | ❌ No | SSR hydration with automatic state serialization |
 //! | `csr` | ❌ No | Client-side rendering only |
+//! | `middleware` | ❌ No | Middleware system, audit trail, store coordination |
+//! | `devtools` | ❌ No | DevTools integration with time-travel debugging |
+//! | `persist-web` | ❌ No | Browser-based state persistence |
 //!
 //! ### Choosing Features
 //!
@@ -53,6 +56,29 @@
 //!
 //! If you don't need state transfer from server to client, you can skip this overhead.
 //!
+//! ## Selectors — Fine-Grained Reactivity
+//!
+//! Selectors create memoized views into specific slices of store state.
+//! Only re-compute when their particular slice changes, preventing
+//! unnecessary re-renders.
+//!
+//! ```rust,ignore
+//! let user_name = create_selector(&store, |s| s.user.name.clone());
+//! let total = combine_selectors(count, discount, |c, d| c * d);
+//! let badge = map_selector(count, |n| format!("{n} items"));
+//! let active = filter_selector(count, |n| *n > 0);
+//! ```
+//!
+//! See the [`selectors`] module for full documentation.
+//!
+//! ## Deployment Models
+//!
+//! | Model | Feature | Description |
+//! |-------|---------|-------------|
+//! | **SSR** | `ssr` (default) | Store created per-request on server |
+//! | **Hydrate** | `hydrate` | Server renders + serializes; client picks up |
+//! | **CSR** | `csr` | Browser-only, no server involvement |
+//!
 //! ## Available Macros
 //!
 //! | Macro | Purpose | Feature |
@@ -64,6 +90,9 @@
 //! | `impl_store!` | Implement Store trait for an existing type | - |
 //! | `impl_hydratable_store!` | Implement HydratableStore trait | `hydrate` |
 //! | `store!` | Complete store definition in one macro | - |
+//! | `selector!` | Batch-create multiple selectors from a store | - |
+//! | `namespace!` | Define typed namespace combining multiple stores | - |
+//! | `derive_state_diff!` | Generate `StateDiff` impl for field-level diffing | `middleware` |
 //!
 //! See the [`macros`] module for detailed documentation and examples.
 //!
@@ -74,7 +103,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! leptos-store = { version = "0.1", default-features = false }
+//! leptos-store = { version = "0.2", default-features = false }
 //!
 //! [features]
 //! ssr = ["leptos-store/ssr"]
@@ -135,10 +164,53 @@
 pub mod r#async;
 pub mod context;
 pub mod macros;
+pub mod selectors;
 pub mod store;
 
 #[cfg(feature = "hydrate")]
 pub mod hydration;
+
+// New modules for extended functionality
+#[cfg(feature = "middleware")]
+#[cfg_attr(docsrs, doc(cfg(feature = "middleware")))]
+pub mod middleware;
+
+#[cfg(feature = "middleware")]
+#[cfg_attr(docsrs, doc(cfg(feature = "middleware")))]
+pub mod audit;
+
+#[cfg(feature = "middleware")]
+#[cfg_attr(docsrs, doc(cfg(feature = "middleware")))]
+pub mod coordination;
+
+#[cfg(feature = "devtools")]
+#[cfg_attr(docsrs, doc(cfg(feature = "devtools")))]
+pub mod devtools;
+
+#[cfg(any(
+    feature = "persist-web",
+    feature = "persist-idb",
+    feature = "persist-server"
+))]
+#[cfg_attr(
+    docsrs,
+    doc(cfg(any(
+        feature = "persist-web",
+        feature = "persist-idb",
+        feature = "persist-server"
+    )))
+)]
+pub mod persistence;
+
+pub mod composition;
+
+#[cfg(feature = "server-actions")]
+#[cfg_attr(docsrs, doc(cfg(feature = "server-actions")))]
+pub mod server;
+
+#[cfg(feature = "templates")]
+#[cfg_attr(docsrs, doc(cfg(feature = "templates")))]
+pub mod templates;
 
 pub mod prelude;
 

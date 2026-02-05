@@ -232,7 +232,7 @@ impl SortField {
 /// Store for managing token data with SSR hydration support
 #[derive(Clone)]
 pub struct TokenStore {
-    pub state: RwSignal<TokenState>,
+    state: RwSignal<TokenState>, // Private - access via Store::state()
 }
 
 impl TokenStore {
@@ -264,6 +264,14 @@ impl TokenStore {
     // ========================================================================
     // Getters
     // ========================================================================
+
+    /// Get the full state (untracked) for serialization.
+    ///
+    /// This is used for SSR hydration serialization. It reads the state
+    /// without creating a reactive dependency.
+    pub fn get_state_untracked(&self) -> TokenState {
+        self.state.get_untracked()
+    }
 
     /// Get all tokens
     pub fn tokens(&self) -> Vec<Token> {
@@ -372,10 +380,14 @@ impl TokenStore {
     }
 
     // ========================================================================
-    // Mutators
+    // Actions - PUBLIC API
     // ========================================================================
+    //
+    // These are the public methods for modifying state.
+    // The state field is private, so external code cannot directly
+    // call state.set() - they must use these controlled actions.
 
-    /// Set tokens
+    /// Update the token list after a fetch
     pub fn set_tokens(&self, tokens: Vec<Token>) {
         self.state.update(|s| {
             s.tokens = tokens;
@@ -385,12 +397,12 @@ impl TokenStore {
         });
     }
 
-    /// Set loading state
+    /// Set the loading state
     pub fn set_loading(&self, loading: bool) {
         self.state.update(|s| s.loading = loading);
     }
 
-    /// Set error
+    /// Set an error message
     pub fn set_error(&self, error: Option<String>) {
         self.state.update(|s| {
             s.error = error;
@@ -398,20 +410,19 @@ impl TokenStore {
         });
     }
 
-    /// Set search query
+    /// Update the search query
     pub fn set_search_query(&self, query: String) {
         self.state.update(|s| s.search_query = query);
     }
 
-    /// Set sort field (toggles direction if same field)
+    /// Toggle sort by a field (toggles direction if same field)
     pub fn set_sort_by(&self, field: SortField) {
         self.state.update(|s| {
             if s.sort_by == field {
-                // Toggle direction if same field
                 s.sort_desc = !s.sort_desc;
             } else {
                 s.sort_by = field;
-                s.sort_desc = true; // Default to descending for new field
+                s.sort_desc = true;
             }
         });
     }
@@ -429,7 +440,7 @@ impl TokenStore {
         self.state.update(|s| s.selected_token_id = id);
     }
 
-    /// Clear selection
+    /// Clear the token selection
     pub fn clear_selection(&self) {
         self.state.update(|s| s.selected_token_id = None);
     }
@@ -641,6 +652,33 @@ mod tests {
 
         let store = TokenStore::with_tokens(tokens);
         assert_eq!(store.token_count(), 2);
+    }
+
+    #[test]
+    fn test_set_tokens_action() {
+        // Test that the public set_tokens action works correctly
+        let store = TokenStore::new();
+        assert_eq!(store.token_count(), 0);
+
+        let tokens = vec![Token {
+            id: "action_test".to_string(),
+            name: "Action Test".to_string(),
+            symbol: "ACT".to_string(),
+            mcap: 5000.0,
+            ..Default::default()
+        }];
+
+        // Call the public action
+        store.set_tokens(tokens);
+
+        // Verify the state was updated
+        assert_eq!(store.token_count(), 1);
+        let retrieved = store.tokens();
+        assert_eq!(retrieved[0].id, "action_test");
+        assert_eq!(retrieved[0].mcap, 5000.0);
+
+        // Verify loading was set to false
+        assert!(!store.is_loading());
     }
 
     #[test]

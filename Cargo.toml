@@ -28,6 +28,17 @@ ssr = []
 hydrate = ["dep:serde", "dep:serde_json", "dep:web-sys", "dep:wasm-bindgen"]
 csr = []
 
+# New features for extended functionality
+middleware = ["dep:js-sys"]
+devtools = ["middleware", "dep:js-sys", "dep:serde", "dep:serde_json"]
+tracing = ["middleware", "dep:tracing"]
+persist-web = ["dep:web-sys", "dep:wasm-bindgen", "dep:base64", "dep:serde", "dep:serde_json", "dep:js-sys"]
+persist-idb = ["persist-web"]
+persist-server = ["ssr"]
+server-actions = ["ssr"]
+templates = ["hydrate"]
+full = ["middleware", "devtools", "persist-web", "persist-idb", "server-actions", "templates"]
+
 [dependencies]
 leptos = { version = "0.8", default-features = false }
 thiserror = "2.0"
@@ -35,8 +46,12 @@ futures = "0.3"
 pin-project-lite = "0.2"
 serde = { version = "1.0", features = ["derive"], optional = true }
 serde_json = { version = "1.0", optional = true }
-web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlScriptElement"], optional = true }
+web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlScriptElement", "Storage"], optional = true }
 wasm-bindgen = { version = "0.2", optional = true }
+js-sys = { version = "0.3", optional = true }
+tracing = { version = "0.1", optional = true }
+base64 = { version = "0.22", optional = true }
+paste = "1.0"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt", "macros"] }
@@ -49,4 +64,17 @@ rustdoc-args = ["--cfg", "docsrs"]
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 [workspace]
-members = [".", "examples/counter-example", "examples/auth-store-example", "examples/token-explorer-example"]
+members = [
+    ".",
+    "examples/counter-example",
+    "examples/auth-store-example",
+    "examples/token-explorer-example",
+    "examples/middleware-example",
+    "examples/persistence-example",
+    "examples/composition-example",
+    "examples/feature-flags-example",
+    "examples/devtools-example",
+    "examples/showcase",
+    "examples/csr-example",
+    "examples/selectors-example",
+]

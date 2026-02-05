@@ -180,6 +180,43 @@ pub fn try_use_store<S: Store + Clone + Send + Sync + 'static>() -> Result<S, St
         })
 }
 
+/// Initialize a store for client-side only (CSR) rendering.
+///
+/// This is the simplest way to set up a store — no server serialization,
+/// no hydration, just provide the store into the Leptos context tree.
+///
+/// # When to Use
+///
+/// Use this for single-page applications (SPAs) built with `trunk` or similar
+/// tools where there is no server-side rendering.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use leptos_store::prelude::*;
+///
+/// #[component]
+/// fn App() -> impl IntoView {
+///     let store = MyStore::new();
+///     mount_csr_store(store);
+///
+///     view! { <MainContent /> }
+/// }
+/// ```
+///
+/// # CSR vs SSR vs Hydrate
+///
+/// | Model | Server | Client | State Transfer |
+/// |-------|--------|--------|----------------|
+/// | CSR | None | `mount_csr_store()` | None needed |
+/// | SSR | `provide_store()` | `provide_store()` | Fresh state |
+/// | Hydrate | `provide_hydrated_store()` | `use_hydrated_store()` | JSON in HTML |
+#[cfg(feature = "csr")]
+#[cfg_attr(docsrs, doc(cfg(feature = "csr")))]
+pub fn mount_csr_store<S: Store + Clone + Send + Sync + 'static>(store: S) {
+    provide_store(store);
+}
+
 /// Wrapper for stores in Leptos context.
 ///
 /// This struct wraps a store for use in Leptos' context system.

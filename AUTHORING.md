@@ -29,7 +29,7 @@ This document provides comprehensive instructions for working with the leptos-st
 
 | Tool | Minimum Version | Installation |
 |------|-----------------|--------------|
-| Rust | 1.85+ | [rustup.rs](https://rustup.rs) |
+| Rust | 1.92+ | [rustup.rs](https://rustup.rs) |
 | Cargo | (bundled) | Comes with Rust |
 | Make | 3.81+ | Usually pre-installed |
 
@@ -222,6 +222,14 @@ See [Understanding SSR Hydration](#understanding-ssr-hydration) for detailed arc
 
 ## Creating Stores
 
+The library enforces the **Enterprise Mode** pattern:
+
+- **Getters**: Public, read-only derived values
+- **Mutators**: **Private**, internal state modification only
+- **Actions**: **Public**, the only external API for writes
+
+This ensures external code cannot bypass business logic by calling mutators directly.
+
 ### Manual Store Definition
 
 ```rust
@@ -238,7 +246,7 @@ pub struct CounterState {
 // 2. Define your store
 #[derive(Clone)]
 pub struct CounterStore {
-    state: RwSignal<CounterState>,
+    state: RwSignal<CounterState>,  // Private field
 }
 
 impl CounterStore {
@@ -248,18 +256,33 @@ impl CounterStore {
         }
     }
 
-    // Getters - derived, read-only
+    // Getters - PUBLIC, derived read-only values
     pub fn doubled(&self) -> i32 {
         self.state.with(|s| s.count * 2)
     }
 
-    // Mutators - pure state changes
-    pub fn increment(&self) {
-        self.state.update(|s| s.count += 1);
+    // Mutators - PRIVATE, internal state changes only
+    fn set_count(&self, value: i32) {
+        self.state.update(|s| s.count = value);
     }
 
-    pub fn set_name(&self, name: String) {
+    fn set_name(&self, name: String) {
         self.state.update(|s| s.name = name);
+    }
+
+    // Actions - PUBLIC, the external API for writes
+    pub fn increment(&self) {
+        let current = self.state.with(|s| s.count);
+        self.set_count(current + 1);
+    }
+
+    pub fn rename(&self, name: String) {
+        self.set_name(name);
+    }
+
+    pub fn reset(&self) {
+        self.set_count(0);
+        self.set_name(String::new());
     }
 }
 
@@ -286,17 +309,33 @@ store! {
         }
 
         getters {
-            doubled() -> i32 {
-                self.state().with(|s| s.count * 2)
+            doubled(this) -> i32 {
+                this.read(|s| s.count * 2)
             }
         }
 
+        // PRIVATE - internal state changes only
         mutators {
-            increment() {
-                self.state.update(|s| s.count += 1);
+            set_count(this, value: i32) {
+                this.mutate(|s| s.count = value);
             }
-            set_name(name: String) {
-                self.state.update(|s| s.name = name);
+            set_name(this, name: String) {
+                this.mutate(|s| s.name = name);
+            }
+        }
+
+        // PUBLIC - the external API for writes
+        actions {
+            increment(this) {
+                let current = this.read(|s| s.count);
+                this.set_count(current + 1);
+            }
+            rename(this, name: String) {
+                this.set_name(name);
+            }
+            reset(this) {
+                this.set_count(0);
+                this.set_name(String::new());
             }
         }
     }
@@ -445,7 +484,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 leptos = { version = "0.8", default-features = false }
-leptos-store = { version = "0.1", default-features = false }
+leptos-store = { version = "0.2", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 
 [features]

@@ -403,27 +403,103 @@ where
         self.version.get()
     }
 
-    /// Set the input value.
-    pub fn set_input(&self, input: I) {
+    // ========================================================================
+    // Mutators - PRIVATE
+    // ========================================================================
+    //
+    // These methods are internal only. External code must use dispatch().
+    // This enforces the Enterprise Mode pattern.
+
+    /// Set the input value. (PRIVATE)
+    #[allow(dead_code)]
+    fn set_input(&self, input: I) {
         self.input.set(Some(input));
     }
 
-    /// Set the output value and mark as not pending.
-    pub fn set_value(&self, value: O) {
+    /// Set the output value and mark as not pending. (PRIVATE)
+    #[allow(dead_code)]
+    fn set_value(&self, value: O) {
         self.value.set(Some(value));
         self.pending.set(false);
     }
 
-    /// Mark the action as pending.
-    pub fn set_pending(&self) {
+    /// Mark the action as pending. (PRIVATE)
+    fn set_pending(&self) {
         self.pending.set(true);
         self.version.update(|v| *v += 1);
     }
 
-    /// Clear the action state.
-    pub fn clear(&self) {
+    /// Clear internal state. (PRIVATE)
+    fn clear_internal(&self) {
         self.input.set(None);
         self.value.set(None);
+        self.pending.set(false);
+    }
+
+    // ========================================================================
+    // Actions - PUBLIC API
+    // ========================================================================
+    //
+    // These are the only methods external code should call to modify state.
+
+    /// Dispatch an action with the given input.
+    ///
+    /// This is the **only** public API for triggering state changes.
+    /// It sets the input, marks the action as pending, and returns
+    /// a handle for the caller to complete the action.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let action = ReactiveAction::<String, i32>::new();
+    ///
+    /// // Start the action
+    /// let handle = action.dispatch("fetch user 123".to_string());
+    ///
+    /// // ... perform async work ...
+    ///
+    /// // Complete with result
+    /// handle.complete(42);
+    /// ```
+    pub fn dispatch(&self, input: I) -> ActionHandle<O> {
+        self.set_input(input);
+        self.set_pending();
+        ActionHandle {
+            value: self.value,
+            pending: self.pending,
+        }
+    }
+
+    /// Clear the action state and reset to idle.
+    pub fn clear(&self) {
+        self.clear_internal();
+    }
+}
+
+/// Handle returned from `ReactiveAction::dispatch()` to complete the action.
+///
+/// This is the controlled way to set the action's result value.
+#[derive(Clone)]
+pub struct ActionHandle<O: Clone + Send + Sync + 'static> {
+    value: RwSignal<Option<O>>,
+    pending: RwSignal<bool>,
+}
+
+impl<O: Clone + Send + Sync + 'static> ActionHandle<O> {
+    /// Complete the action with a successful result.
+    pub fn complete(self, value: O) {
+        self.value.set(Some(value));
+        self.pending.set(false);
+    }
+
+    /// Complete the action by setting the value (alias for complete).
+    pub fn set_value(self, value: O) {
+        self.complete(value);
+    }
+
+    /// Mark the action as no longer pending without setting a value.
+    /// Useful for error cases where you want to clear pending state.
+    pub fn cancel(self) {
         self.pending.set(false);
     }
 }
@@ -504,19 +580,44 @@ mod tests {
     fn test_reactive_action_state_changes() {
         let action: ReactiveAction<String, i32> = ReactiveAction::new();
 
-        action.set_input("test".to_string());
+        // Use the public dispatch() API
+        let handle = action.dispatch("test".to_string());
         assert_eq!(action.input(), Some("test".to_string()));
-
-        action.set_pending();
         assert!(action.pending());
         assert_eq!(action.version(), 1);
 
-        action.set_value(42);
+        // Complete the action via the handle
+        handle.complete(42);
         assert_eq!(action.value(), Some(42));
         assert!(!action.pending());
 
+        // Clear using the public clear() method
         action.clear();
         assert!(action.input().is_none());
         assert!(action.value().is_none());
+    }
+
+    #[test]
+    fn test_action_handle_complete() {
+        let action: ReactiveAction<String, i32> = ReactiveAction::new();
+
+        let handle = action.dispatch("query".to_string());
+        assert!(action.pending());
+
+        handle.complete(100);
+        assert!(!action.pending());
+        assert_eq!(action.value(), Some(100));
+    }
+
+    #[test]
+    fn test_action_handle_cancel() {
+        let action: ReactiveAction<String, i32> = ReactiveAction::new();
+
+        let handle = action.dispatch("query".to_string());
+        assert!(action.pending());
+
+        handle.cancel();
+        assert!(!action.pending());
+        assert!(action.value().is_none()); // No value set on cancel
     }
 }

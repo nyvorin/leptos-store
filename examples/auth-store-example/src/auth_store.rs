@@ -3,8 +3,33 @@
 
 //! Authentication Store
 //!
-//! This module defines the authentication store with all its
-//! state, getters, mutators, and actions.
+//! This module defines the authentication store following the **Enterprise Mode** pattern:
+//!
+//! - **Getters**: Public, read-only derived values
+//! - **Mutators**: **Private**, internal state modification only
+//! - **Actions**: **Public**, the only external API for writes
+//!
+//! This pattern ensures that external code cannot bypass business logic
+//! by calling mutators directly. All state changes must go through actions.
+//!
+//! # Architecture
+//!
+//! ```text
+//! External Code (Components)
+//!         │
+//!         ▼
+//!    ┌─────────────┐
+//!    │   Actions   │  ← login(), logout() - PUBLIC
+//!    └──────┬──────┘
+//!           │
+//!    ┌──────▼──────┐
+//!    │  Mutators   │  ← set_user(), set_loading() - PRIVATE
+//!    └──────┬──────┘
+//!           │
+//!    ┌──────▼──────┐
+//!    │ RwSignal    │  ← Private field
+//!    └─────────────┘
+//! ```
 //!
 //! # Hydration Support
 //!
@@ -188,6 +213,13 @@ impl AuthStore {
         }
     }
 
+    /// Get the state without tracking reactivity.
+    ///
+    /// Used for serialization during SSR hydration.
+    pub fn get_state_untracked(&self) -> AuthState {
+        self.state.get_untracked()
+    }
+
     // ========================================================================
     // Getters
     // ========================================================================
@@ -251,41 +283,50 @@ impl AuthStore {
     }
 
     // ========================================================================
-    // Mutators
+    // Mutators - PRIVATE
     // ========================================================================
+    //
+    // These methods are internal only. External code cannot call them directly.
+    // All state changes must go through the public Actions below.
+    // This enforces the Enterprise Mode pattern:
+    //   - Getters: public, read-only
+    //   - Mutators: private, internal state modification
+    //   - Actions: public, the only external write API
 
-    /// Set the current user.
-    pub fn set_user(&self, user: Option<User>) {
+    /// Set the current user. (PRIVATE - use actions instead)
+    #[allow(dead_code)]
+    fn set_user(&self, user: Option<User>) {
         self.state.update(|s| s.user = user);
     }
 
-    /// Set the authentication token.
-    pub fn set_token(&self, token: Option<AuthToken>) {
+    /// Set the authentication token. (PRIVATE - use actions instead)
+    #[allow(dead_code)]
+    fn set_token(&self, token: Option<AuthToken>) {
         self.state.update(|s| s.token = token);
     }
 
-    /// Set loading state.
-    pub fn set_loading(&self, loading: bool) {
+    /// Set loading state. (PRIVATE - use actions instead)
+    fn set_loading(&self, loading: bool) {
         self.state.update(|s| s.loading = loading);
     }
 
-    /// Set error state.
-    pub fn set_error(&self, error: Option<AuthError>) {
+    /// Set error state. (PRIVATE - use actions instead)
+    fn set_error(&self, error: Option<AuthError>) {
         self.state.update(|s| s.error = error);
     }
 
-    /// Clear error state.
-    pub fn clear_error(&self) {
+    /// Clear error state. (PRIVATE - use actions instead)
+    fn clear_error(&self) {
         self.state.update(|s| s.error = None);
     }
 
-    /// Set remember me preference.
-    pub fn set_remember_me(&self, remember: bool) {
+    /// Set remember me preference. (PRIVATE - use actions instead)
+    fn set_remember_me(&self, remember: bool) {
         self.state.update(|s| s.remember_me = remember);
     }
 
-    /// Set authenticated state (user + token together).
-    pub fn set_authenticated(&self, user: User, token: AuthToken) {
+    /// Set authenticated state (user + token together). (PRIVATE)
+    fn set_authenticated(&self, user: User, token: AuthToken) {
         self.state.update(|s| {
             s.user = Some(user);
             s.token = Some(token);
@@ -294,8 +335,8 @@ impl AuthStore {
         });
     }
 
-    /// Clear all authentication state (logout).
-    pub fn clear_auth(&self) {
+    /// Clear all authentication state. (PRIVATE - use logout() action instead)
+    fn clear_auth(&self) {
         self.state.update(|s| {
             s.user = None;
             s.token = None;
@@ -305,8 +346,11 @@ impl AuthStore {
     }
 
     // ========================================================================
-    // Actions
+    // Actions - PUBLIC API
     // ========================================================================
+    //
+    // These are the only methods external code should call to modify state.
+    // Actions orchestrate private mutators to ensure business logic is enforced.
 
     /// Perform login action.
     ///
@@ -422,6 +466,10 @@ impl leptos_store::hydration::HydratableStore for AuthStore {
 // ============================================================================
 // Tests
 // ============================================================================
+//
+// Note: Tests in this module can call private mutators because they're in the
+// same module. This is intentional for unit testing. External code (in other
+// modules/crates) cannot access private mutators - they must use public actions.
 
 #[cfg(test)]
 mod tests {
