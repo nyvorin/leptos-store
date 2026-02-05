@@ -33,6 +33,10 @@ pub use crate::store::{
 // Context management
 pub use crate::context::{StoreProvider, provide_store, use_store};
 
+#[cfg(feature = "csr")]
+#[cfg_attr(docsrs, doc(cfg(feature = "csr")))]
+pub use crate::context::mount_csr_store;
+
 // Async actions
 pub use crate::r#async::{
     Action, ActionError, ActionFuture, ActionResult, ActionState, AsyncAction, AsyncActionBuilder,
