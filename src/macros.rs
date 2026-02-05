@@ -1393,6 +1393,73 @@ macro_rules! namespace {
 }
 
 // ============================================================================
+// State Diff Derive Macro
+// ============================================================================
+
+/// Derive the [`StateDiff`] trait for a struct, enabling field-level change tracking
+/// in the audit trail system.
+///
+/// Each field is compared using `PartialEq`. Changed fields are recorded with their
+/// `Debug` representation as old/new values.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use leptos_store::prelude::*;
+///
+/// derive_state_diff! {
+///     pub struct UserState {
+///         pub name: String,
+///         pub email: String,
+///         pub login_count: u32,
+///     }
+/// }
+///
+/// let old = UserState { name: "Alice".into(), email: "a@b.com".into(), login_count: 5 };
+/// let new = UserState { name: "Alice".into(), email: "a@c.com".into(), login_count: 6 };
+/// let changes = old.diff(&new);
+/// // changes[0]: email: "a@b.com" → "a@c.com"
+/// // changes[1]: login_count: 5 → 6
+/// ```
+///
+/// # Requirements
+///
+/// Each field type must implement `PartialEq` and `Debug`.
+#[cfg(feature = "middleware")]
+#[macro_export]
+macro_rules! derive_state_diff {
+    (
+        $(#[$meta:meta])*
+        $vis:vis struct $name:ident {
+            $( $(#[$field_meta:meta])* $field_vis:vis $field:ident : $field_ty:ty ),+ $(,)?
+        }
+    ) => {
+        $(#[$meta])*
+        #[derive(Clone, Debug, PartialEq)]
+        $vis struct $name {
+            $( $(#[$field_meta])* $field_vis $field: $field_ty, )+
+        }
+
+        impl $crate::audit::StateDiff for $name {
+            fn diff(&self, other: &Self) -> Vec<$crate::audit::FieldChange> {
+                let mut changes = Vec::new();
+                $(
+                    if self.$field != other.$field {
+                        changes.push($crate::audit::FieldChange {
+                            field_path: stringify!($field).to_string(),
+                            old_value: format!("{:?}", self.$field),
+                            new_value: format!("{:?}", other.$field),
+                            change_type: $crate::audit::ChangeType::Modified,
+                        });
+                    }
+                )+
+                changes
+            }
+        }
+    };
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 

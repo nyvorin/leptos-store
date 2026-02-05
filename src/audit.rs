@@ -807,4 +807,29 @@ mod tests {
         assert_eq!(format!("{}", ChangeType::Added), "Added");
         assert_eq!(format!("{}", ChangeType::Removed), "Removed");
     }
+
+    #[test]
+    fn test_derive_state_diff_macro() {
+        crate::derive_state_diff! {
+            struct MacroTestState {
+                name: String,
+                age: i32,
+                active: bool,
+            }
+        }
+
+        let a = MacroTestState { name: "Alice".into(), age: 30, active: true };
+        let b = MacroTestState { name: "Alice".into(), age: 31, active: false };
+
+        let diffs = a.diff(&b);
+        assert_eq!(diffs.len(), 2);
+
+        let age_diff = diffs.iter().find(|d| d.field_path == "age").unwrap();
+        assert_eq!(age_diff.old_value, "30");
+        assert_eq!(age_diff.new_value, "31");
+
+        let active_diff = diffs.iter().find(|d| d.field_path == "active").unwrap();
+        assert_eq!(active_diff.old_value, "true");
+        assert_eq!(active_diff.new_value, "false");
+    }
 }
