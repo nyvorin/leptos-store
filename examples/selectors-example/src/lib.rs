@@ -21,7 +21,10 @@ use leptos_router::{
     components::{Route, Router, Routes},
     path,
 };
-use leptos_store::prelude::*;
+use leptos_store::prelude::{
+    provide_store, use_store,
+    create_selector, combine_selectors, map_selector, filter_selector,
+};
 use leptos_store::{selector, store};
 
 // ============================================================================
