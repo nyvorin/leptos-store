@@ -146,6 +146,10 @@ pub mod hydration;
 #[cfg_attr(docsrs, doc(cfg(feature = "middleware")))]
 pub mod middleware;
 
+#[cfg(feature = "middleware")]
+#[cfg_attr(docsrs, doc(cfg(feature = "middleware")))]
+pub mod audit;
+
 #[cfg(feature = "devtools")]
 #[cfg_attr(docsrs, doc(cfg(feature = "devtools")))]
 pub mod devtools;

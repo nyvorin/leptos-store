@@ -80,6 +80,12 @@ pub use crate::middleware::{
 #[cfg_attr(docsrs, doc(cfg(feature = "tracing")))]
 pub use crate::middleware::TracingMiddleware;
 
+#[cfg(feature = "middleware")]
+#[cfg_attr(docsrs, doc(cfg(feature = "middleware")))]
+pub use crate::audit::{
+    AuditEntry, AuditTrail, AuditUserContext, ChangeType, FieldChange, StateDiff,
+};
+
 // Devtools support (when feature is enabled)
 #[cfg(feature = "devtools")]
 #[cfg_attr(docsrs, doc(cfg(feature = "devtools")))]
