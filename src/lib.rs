@@ -37,6 +37,9 @@
 //! | `ssr` | ✅ Yes | Server-side rendering support |
 //! | `hydrate` | ❌ No | SSR hydration with automatic state serialization |
 //! | `csr` | ❌ No | Client-side rendering only |
+//! | `middleware` | ❌ No | Middleware system, audit trail, store coordination |
+//! | `devtools` | ❌ No | DevTools integration with time-travel debugging |
+//! | `persist-web` | ❌ No | Browser-based state persistence |
 //!
 //! ### Choosing Features
 //!
@@ -53,6 +56,29 @@
 //!
 //! If you don't need state transfer from server to client, you can skip this overhead.
 //!
+//! ## Selectors — Fine-Grained Reactivity
+//!
+//! Selectors create memoized views into specific slices of store state.
+//! Only re-compute when their particular slice changes, preventing
+//! unnecessary re-renders.
+//!
+//! ```rust,ignore
+//! let user_name = create_selector(&store, |s| s.user.name.clone());
+//! let total = combine_selectors(count, discount, |c, d| c * d);
+//! let badge = map_selector(count, |n| format!("{n} items"));
+//! let active = filter_selector(count, |n| *n > 0);
+//! ```
+//!
+//! See the [`selectors`] module for full documentation.
+//!
+//! ## Deployment Models
+//!
+//! | Model | Feature | Description |
+//! |-------|---------|-------------|
+//! | **SSR** | `ssr` (default) | Store created per-request on server |
+//! | **Hydrate** | `hydrate` | Server renders + serializes; client picks up |
+//! | **CSR** | `csr` | Browser-only, no server involvement |
+//!
 //! ## Available Macros
 //!
 //! | Macro | Purpose | Feature |
@@ -64,6 +90,9 @@
 //! | `impl_store!` | Implement Store trait for an existing type | - |
 //! | `impl_hydratable_store!` | Implement HydratableStore trait | `hydrate` |
 //! | `store!` | Complete store definition in one macro | - |
+//! | `selector!` | Batch-create multiple selectors from a store | - |
+//! | `namespace!` | Define typed namespace combining multiple stores | - |
+//! | `derive_state_diff!` | Generate `StateDiff` impl for field-level diffing | `middleware` |
 //!
 //! See the [`macros`] module for detailed documentation and examples.
 //!

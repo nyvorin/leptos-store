@@ -1396,7 +1396,7 @@ macro_rules! namespace {
 // State Diff Derive Macro
 // ============================================================================
 
-/// Derive the [`StateDiff`] trait for a struct, enabling field-level change tracking
+/// Derive the [`StateDiff`](crate::audit::StateDiff) trait for a struct, enabling field-level change tracking
 /// in the audit trail system.
 ///
 /// Each field is compared using `PartialEq`. Changed fields are recorded with their

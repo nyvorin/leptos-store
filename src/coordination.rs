@@ -34,7 +34,7 @@
 //!
 //! # Sharing an EventBus
 //!
-//! To share one [`EventBus`] between a [`MiddlewareStore`] and the
+//! To share one [`EventBus`] between a [`MiddlewareStore`](crate::middleware::MiddlewareStore) and the
 //! coordinator, use [`StoreCoordinator::with_event_bus`]:
 //!
 //! ```rust,ignore
