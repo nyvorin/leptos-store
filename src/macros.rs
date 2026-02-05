@@ -1404,8 +1404,9 @@ macro_rules! namespace {
 ///
 /// # Example
 ///
-/// ```rust,ignore
-/// use leptos_store::prelude::*;
+/// ```rust
+/// # use leptos_store::audit::StateDiff;
+/// use leptos_store::derive_state_diff;
 ///
 /// derive_state_diff! {
 ///     pub struct UserState {
@@ -1614,6 +1615,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(unused)]
     fn test_namespace_macro() {
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -1663,6 +1665,7 @@ mod tests {
                 // Test accessor reads state correctly via Store trait
                 use leptos::prelude::With;
                 assert_eq!(ns.alpha().state().with(|s| s.value_a), 10);
+                assert_eq!(ns.beta().state().with(|s| s.value_b.clone()), String::new());
             });
         });
     }
