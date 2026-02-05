@@ -125,9 +125,10 @@ pub enum MiddlewareError {
 // ============================================================================
 
 /// Result of middleware execution that controls the pipeline flow.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum MiddlewareResult {
     /// Continue to the next middleware or operation.
+    #[default]
     Continue,
     /// Skip remaining middleware but execute the operation.
     Skip,
@@ -157,11 +158,6 @@ impl MiddlewareResult {
     }
 }
 
-impl Default for MiddlewareResult {
-    fn default() -> Self {
-        Self::Continue
-    }
-}
 
 // ============================================================================
 // Mutation Result
@@ -539,7 +535,7 @@ impl<S: Store> MiddlewareChain<S> {
     fn ensure_sorted(&mut self) {
         if !self.sorted {
             self.middleware
-                .sort_by(|a, b| b.priority().cmp(&a.priority()));
+                .sort_by_key(|b| std::cmp::Reverse(b.priority()));
             self.sorted = true;
         }
     }
@@ -1189,10 +1185,10 @@ impl<S: Store> Middleware<S> for LoggingMiddleware {
                 );
             }
 
-            if !result.success {
-                if let Some(ref err) = result.error {
-                    self.log(LogLevel::Error, &format!("Error: {}", err));
-                }
+            if !result.success
+                && let Some(ref err) = result.error
+            {
+                self.log(LogLevel::Error, &format!("Error: {}", err));
             }
 
             if self.config.log_state_after {
@@ -1247,10 +1243,10 @@ impl<S: Store> Middleware<S> for LoggingMiddleware {
                 );
             }
 
-            if !result.success {
-                if let Some(ref err) = result.error {
-                    self.log(LogLevel::Error, &format!("Error: {}", err));
-                }
+            if !result.success
+                && let Some(ref err) = result.error
+            {
+                self.log(LogLevel::Error, &format!("Error: {}", err));
             }
         }
     }

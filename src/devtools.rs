@@ -647,10 +647,10 @@ pub fn StoreInspector(
 
     // Auto-select first store if none selected
     Effect::new(move |_| {
-        if selected_store.get().is_none() {
-            if let Some(first) = stores().first() {
-                selected_store.set(Some(first.key.clone()));
-            }
+        if selected_store.get().is_none()
+            && let Some(first) = stores().first()
+        {
+            selected_store.set(Some(first.key.clone()));
         }
     });
 

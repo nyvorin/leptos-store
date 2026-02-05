@@ -953,7 +953,7 @@ impl PersistenceAdapter for SessionStorageAdapter {
 /// - Transaction support
 #[cfg(feature = "persist-idb")]
 pub struct IndexedDbAdapter {
-    database_name: String,
+    _database_name: String,
     store_name: String,
 }
 
@@ -962,7 +962,7 @@ impl IndexedDbAdapter {
     /// Create a new IndexedDB adapter.
     pub fn new(database_name: impl Into<String>) -> Self {
         Self {
-            database_name: database_name.into(),
+            _database_name: database_name.into(),
             store_name: "store".to_string(),
         }
     }
@@ -1023,7 +1023,7 @@ impl PersistenceAdapter for IndexedDbAdapter {
 /// Requires the `persist-server` feature.
 #[cfg(feature = "persist-server")]
 pub struct ServerSyncAdapter {
-    endpoint: String,
+    _endpoint: String,
 }
 
 #[cfg(feature = "persist-server")]
@@ -1031,7 +1031,7 @@ impl ServerSyncAdapter {
     /// Create a new server sync adapter.
     pub fn new(endpoint: impl Into<String>) -> Self {
         Self {
-            endpoint: endpoint.into(),
+            _endpoint: endpoint.into(),
         }
     }
 }
@@ -1092,6 +1092,7 @@ fn current_timestamp_ms() -> u64 {
 
 /// Base64 encode data.
 #[cfg(feature = "persist-web")]
+#[allow(dead_code)]
 fn base64_encode(data: &[u8]) -> String {
     use std::io::Write;
     let mut encoder =
@@ -1102,6 +1103,7 @@ fn base64_encode(data: &[u8]) -> String {
 
 /// Base64 decode data.
 #[cfg(feature = "persist-web")]
+#[allow(dead_code)]
 fn base64_decode(data: &str) -> Result<Vec<u8>, String> {
     use base64::Engine;
     base64::engine::general_purpose::STANDARD

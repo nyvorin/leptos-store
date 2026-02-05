@@ -96,6 +96,8 @@ use std::fmt;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
+type UserContextProvider = Arc<RwLock<Option<Box<dyn Fn() -> AuditUserContext + Send + Sync>>>>;
+
 // ============================================================================
 // Cross-platform Timestamp
 // ============================================================================
@@ -351,7 +353,7 @@ pub struct AuditTrail<State: Clone + Send + Sync + 'static> {
     entries: Arc<RwLock<Vec<AuditEntry<State>>>>,
     next_id: Arc<AtomicU64>,
     max_entries: usize,
-    user_context_provider: Arc<RwLock<Option<Box<dyn Fn() -> AuditUserContext + Send + Sync>>>>,
+    user_context_provider: UserContextProvider,
 }
 
 impl<State: Clone + Send + Sync + 'static> Clone for AuditTrail<State> {
