@@ -29,7 +29,7 @@ This document provides comprehensive instructions for working with the leptos-st
 
 | Tool | Minimum Version | Installation |
 |------|-----------------|--------------|
-| Rust | 1.85+ | [rustup.rs](https://rustup.rs) |
+| Rust | 1.92+ | [rustup.rs](https://rustup.rs) |
 | Cargo | (bundled) | Comes with Rust |
 | Make | 3.81+ | Usually pre-installed |
 
@@ -484,7 +484,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 leptos = { version = "0.8", default-features = false }
-leptos-store = { version = "0.1", default-features = false }
+leptos-store = { version = "0.2", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 
 [features]

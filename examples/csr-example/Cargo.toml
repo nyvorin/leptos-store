@@ -2,7 +2,7 @@
 name = "csr-example"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.92"
 publish = false
 
 [lib]
@@ -58,8 +58,8 @@ wasm-bindgen-test = "0.3"
 output-name = "csr-example"
 site-root = "target/site"
 site-pkg-dir = "pkg"
-site-addr = "127.0.0.1:3011"
-reload-port = 3012
+site-addr = "127.0.0.1:3015"
+reload-port = 3016
 style-file = "style/main.css"
 bin-features = ["ssr"]
 lib-features = ["hydrate"]

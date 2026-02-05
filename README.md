@@ -30,7 +30,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-leptos-store = "0.1"
+leptos-store = "0.2"
 leptos = "0.8"
 ```
 
@@ -51,7 +51,7 @@ The `ssr` feature is enabled by default. For basic SSR without state hydration:
 
 ```toml
 [dependencies]
-leptos-store = "0.1"
+leptos-store = "0.2"
 ```
 
 #### Full SSR with Hydration (Recommended for Production)
@@ -60,7 +60,7 @@ For full SSR applications where state needs to transfer from server to client, e
 
 ```toml
 [dependencies]
-leptos-store = { version = "0.1", default-features = false }
+leptos-store = { version = "0.2", default-features = false }
 
 [features]
 ssr = ["leptos-store/ssr", "leptos/ssr"]
@@ -79,7 +79,7 @@ For SPAs without server rendering:
 
 ```toml
 [dependencies]
-leptos-store = { version = "0.1", default-features = false, features = ["csr"] }
+leptos-store = { version = "0.2", default-features = false, features = ["csr"] }
 ```
 
 ### Deployment Models
