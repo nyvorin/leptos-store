@@ -19,10 +19,18 @@
 //!
 //! # Example
 //!
-//! ```rust,ignore
-//! use leptos::prelude::*;
-//! use leptos_store::prelude::*;
-//!
+//! ```rust
+//! # use leptos::prelude::{RwSignal, ReadSignal};
+//! # use leptos_store::prelude::{Store, create_selector, map_selector, combine_selectors};
+//! # #[derive(Clone, Debug, Default)]
+//! # struct MyState { count: i32, name: String }
+//! # #[derive(Clone)]
+//! # struct MyStore { state: RwSignal<MyState> }
+//! # impl Store for MyStore {
+//! #     type State = MyState;
+//! #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+//! # }
+//! # let counter_store = MyStore { state: RwSignal::new(MyState::default()) };
 //! // Select just the count from a store
 //! let count = create_selector(&counter_store, |state| state.count);
 //!
@@ -53,10 +61,18 @@ use leptos::prelude::*;
 ///
 /// # Example
 ///
-/// ```rust,ignore
-/// use leptos::prelude::*;
-/// use leptos_store::prelude::*;
-///
+/// ```rust
+/// # use leptos::prelude::{RwSignal, ReadSignal};
+/// # use leptos_store::prelude::{Store, create_selector};
+/// # #[derive(Clone, Debug, Default)]
+/// # struct MyState { count: i32, name: String }
+/// # #[derive(Clone)]
+/// # struct MyStore { state: RwSignal<MyState> }
+/// # impl Store for MyStore {
+/// #     type State = MyState;
+/// #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+/// # }
+/// # let my_store = MyStore { state: RwSignal::new(MyState::default()) };
 /// let count = create_selector(&my_store, |state| state.count);
 /// let name = create_selector(&my_store, |state| state.name.clone());
 /// ```
@@ -90,10 +106,18 @@ where
 ///
 /// # Example
 ///
-/// ```rust,ignore
-/// use leptos::prelude::*;
-/// use leptos_store::prelude::*;
-///
+/// ```rust
+/// # use leptos::prelude::{RwSignal, ReadSignal};
+/// # use leptos_store::prelude::{Store, create_selector, combine_selectors};
+/// # #[derive(Clone, Debug, Default)]
+/// # struct MyState { count: i32, name: String }
+/// # #[derive(Clone)]
+/// # struct MyStore { state: RwSignal<MyState> }
+/// # impl Store for MyStore {
+/// #     type State = MyState;
+/// #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+/// # }
+/// # let store = MyStore { state: RwSignal::new(MyState::default()) };
 /// let count = create_selector(&store, |s| s.count);
 /// let name = create_selector(&store, |s| s.name.clone());
 /// let display = combine_selectors(count, name, |c, n| format!("{n}: {c}"));
@@ -131,10 +155,18 @@ where
 ///
 /// # Example
 ///
-/// ```rust,ignore
-/// use leptos::prelude::*;
-/// use leptos_store::prelude::*;
-///
+/// ```rust
+/// # use leptos::prelude::{RwSignal, ReadSignal};
+/// # use leptos_store::prelude::{Store, create_selector, map_selector};
+/// # #[derive(Clone, Debug, Default)]
+/// # struct MyState { count: i32, name: String }
+/// # #[derive(Clone)]
+/// # struct MyStore { state: RwSignal<MyState> }
+/// # impl Store for MyStore {
+/// #     type State = MyState;
+/// #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+/// # }
+/// # let store = MyStore { state: RwSignal::new(MyState::default()) };
 /// let count = create_selector(&store, |s| s.count);
 /// let doubled = map_selector(count, |c| c * 2);
 /// let is_positive = map_selector(count, |c| *c > 0);
@@ -170,10 +202,18 @@ where
 ///
 /// # Example
 ///
-/// ```rust,ignore
-/// use leptos::prelude::*;
-/// use leptos_store::prelude::*;
-///
+/// ```rust
+/// # use leptos::prelude::{RwSignal, ReadSignal};
+/// # use leptos_store::prelude::{Store, create_selector, filter_selector};
+/// # #[derive(Clone, Debug, Default)]
+/// # struct MyState { count: i32, name: String }
+/// # #[derive(Clone)]
+/// # struct MyStore { state: RwSignal<MyState> }
+/// # impl Store for MyStore {
+/// #     type State = MyState;
+/// #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+/// # }
+/// # let store = MyStore { state: RwSignal::new(MyState::default()) };
 /// let count = create_selector(&store, |s| s.count);
 /// let positive_only = filter_selector(count, |c| *c > 0);
 /// // positive_only.get() returns Some(5) when count is 5, None when count is -1
