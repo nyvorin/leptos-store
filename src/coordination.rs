@@ -11,9 +11,39 @@
 //!
 //! # Quick Start
 //!
-//! ```rust,ignore
-//! use leptos_store::prelude::*;
-//!
+//! ```rust
+//! # use leptos::prelude::{RwSignal, ReadSignal};
+//! # use leptos_store::store::Store;
+//! # use leptos_store::coordination::StoreCoordinator;
+//! # #[derive(Clone, Debug, Default)]
+//! # struct CartState;
+//! # #[derive(Clone)]
+//! # struct CartStore { state: RwSignal<CartState> }
+//! # impl Store for CartStore {
+//! #     type State = CartState;
+//! #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+//! # }
+//! # #[derive(Clone, Debug, Default)]
+//! # struct TotalsState;
+//! # #[derive(Clone)]
+//! # struct TotalsStore { state: RwSignal<TotalsState> }
+//! # impl TotalsStore { fn recalculate(&self) {} }
+//! # impl Store for TotalsStore {
+//! #     type State = TotalsState;
+//! #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+//! # }
+//! # #[derive(Clone, Debug, Default)]
+//! # struct InventoryState;
+//! # #[derive(Clone)]
+//! # struct InventoryStore { state: RwSignal<InventoryState> }
+//! # impl InventoryStore { fn check_stock(&self) {} }
+//! # impl Store for InventoryStore {
+//! #     type State = InventoryState;
+//! #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+//! # }
+//! # let cart_store = CartStore { state: RwSignal::new(CartState) };
+//! # let totals_store = TotalsStore { state: RwSignal::new(TotalsState) };
+//! # let inventory_store = InventoryStore { state: RwSignal::new(InventoryState) };
 //! let mut coord = StoreCoordinator::new();
 //!
 //! // Any successful mutation on `cart_store` triggers a recalculation
@@ -37,7 +67,21 @@
 //! To share one [`EventBus`] between a [`MiddlewareStore`](crate::middleware::MiddlewareStore) and the
 //! coordinator, use [`StoreCoordinator::with_event_bus`]:
 //!
-//! ```rust,ignore
+//! ```rust
+//! # use leptos::prelude::{RwSignal, ReadSignal};
+//! # use leptos_store::store::Store;
+//! # use leptos_store::middleware::{EventBus, MiddlewareStore};
+//! # use leptos_store::coordination::StoreCoordinator;
+//! # use std::sync::Arc;
+//! # #[derive(Clone, Debug, Default)]
+//! # struct MyState;
+//! # #[derive(Clone)]
+//! # struct MyStore { state: RwSignal<MyState> }
+//! # impl Store for MyStore {
+//! #     type State = MyState;
+//! #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+//! # }
+//! # let my_store = MyStore { state: RwSignal::new(MyState) };
 //! let bus = Arc::new(EventBus::new());
 //! let mw_store = MiddlewareStore::with_event_bus(my_store, Arc::clone(&bus));
 //! let coord = StoreCoordinator::with_event_bus(Arc::clone(&bus));
