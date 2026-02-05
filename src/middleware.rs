@@ -10,8 +10,9 @@
 //!
 //! Middleware can intercept mutations and actions before and after execution:
 //!
-//! ```rust,ignore
-//! use leptos_store::middleware::*;
+//! ```rust
+//! # use leptos_store::store::Store;
+//! use leptos_store::middleware::{Middleware, MiddlewareContext, MiddlewareResult};
 //!
 //! struct LoggingMiddleware;
 //!
@@ -27,15 +28,16 @@
 //!
 //! Subscribe to store events for observation without affecting control flow:
 //!
-//! ```rust,ignore
-//! use leptos_store::middleware::*;
+//! ```rust
+//! use leptos_store::middleware::{EventSubscriber, StoreEvent};
 //!
+//! # fn record_metric(_name: &str, _duration_ms: u64) {}
 //! struct MetricsSubscriber;
 //!
 //! impl EventSubscriber for MetricsSubscriber {
 //!     fn on_event(&self, event: &StoreEvent) {
 //!         match event {
-//!             StoreEvent::MutationCompleted { name, duration_ms } => {
+//!             StoreEvent::MutationCompleted { name, duration_ms, .. } => {
 //!                 record_metric(name, *duration_ms);
 //!             }
 //!             _ => {}
@@ -429,9 +431,9 @@ impl ContextMetadata {
 ///
 /// # Example
 ///
-/// ```rust,ignore
-/// use leptos_store::middleware::*;
+/// ```rust
 /// use leptos_store::store::Store;
+/// use leptos_store::middleware::{Middleware, MiddlewareContext, MiddlewareResult, MutationResult};
 ///
 /// struct ValidationMiddleware;
 ///
@@ -1042,9 +1044,19 @@ impl Default for LoggingConfig {
 ///
 /// # Example
 ///
-/// ```rust,ignore
-/// use leptos_store::middleware::*;
-///
+/// ```rust
+/// # use leptos::prelude::{RwSignal, ReadSignal};
+/// # use leptos_store::store::Store;
+/// use leptos_store::middleware::{MiddlewareStore, LoggingMiddleware};
+/// # #[derive(Clone, Debug, Default)]
+/// # struct MyState;
+/// # #[derive(Clone)]
+/// # struct MyStore { state: RwSignal<MyState> }
+/// # impl Store for MyStore {
+/// #     type State = MyState;
+/// #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+/// # }
+/// # let my_store = MyStore { state: RwSignal::new(MyState::default()) };
 /// let store = MiddlewareStore::new(my_store);
 /// store.add_middleware(LoggingMiddleware::new());
 /// ```
@@ -1361,8 +1373,10 @@ pub type ValidationFn<State> = Box<dyn Fn(&State) -> Result<(), String> + Send +
 ///
 /// # Example
 ///
-/// ```rust,ignore
-/// use leptos_store::middleware::*;
+/// ```rust
+/// use leptos_store::middleware::ValidationMiddleware;
+/// # #[derive(Clone, Debug, Default)]
+/// # struct MyState { count: i32 }
 ///
 /// let validator = ValidationMiddleware::new()
 ///     .add_validator(|state: &MyState| {
@@ -1538,6 +1552,7 @@ mod tests {
     use std::sync::atomic::{AtomicU32, Ordering};
 
     #[derive(Clone, Debug, Default)]
+    #[allow(dead_code)]
     struct TestState {
         count: i32,
     }
