@@ -235,10 +235,10 @@ impl ShowcaseStore {
             .iter()
             .filter(|e| {
                 // Category filter
-                if let Some(ref cat) = state.category_filter {
-                    if e.category.label() != cat {
-                        return false;
-                    }
+                if let Some(ref cat) = state.category_filter
+                    && e.category.label() != cat
+                {
+                    return false;
                 }
 
                 // Search filter
