@@ -11,9 +11,37 @@
 //!
 //! # Example
 //!
-//! ```rust,ignore
-//! use leptos_store::composition::*;
-//!
+//! ```rust
+//! # use leptos::prelude::{RwSignal, ReadSignal};
+//! # use leptos_store::store::Store;
+//! # use leptos_store::composition::{RootStore, CompositeStore};
+//! # #[derive(Clone, Debug, Default)]
+//! # struct AuthState;
+//! # #[derive(Clone)]
+//! # struct AuthStore { state: RwSignal<AuthState> }
+//! # impl AuthStore { fn new() -> Self { Self { state: RwSignal::new(AuthState) } } }
+//! # impl Store for AuthStore {
+//! #     type State = AuthState;
+//! #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+//! # }
+//! # #[derive(Clone, Debug, Default)]
+//! # struct CartState;
+//! # #[derive(Clone)]
+//! # struct CartStore { state: RwSignal<CartState> }
+//! # impl CartStore { fn new() -> Self { Self { state: RwSignal::new(CartState) } } }
+//! # impl Store for CartStore {
+//! #     type State = CartState;
+//! #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+//! # }
+//! # #[derive(Clone, Debug, Default)]
+//! # struct UiState;
+//! # #[derive(Clone)]
+//! # struct UiStore { state: RwSignal<UiState> }
+//! # impl UiStore { fn new() -> Self { Self { state: RwSignal::new(UiState) } } }
+//! # impl Store for UiStore {
+//! #     type State = UiState;
+//! #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+//! # }
 //! // Create a root store aggregating multiple domain stores
 //! let root = RootStore::builder()
 //!     .with_store(AuthStore::new())
@@ -115,18 +143,34 @@ pub trait CompositeStore: Send + Sync {
 ///
 /// # Example
 ///
-/// ```rust,ignore
-/// use leptos_store::composition::*;
-///
+/// ```rust
+/// # use leptos::prelude::{RwSignal, ReadSignal};
+/// # use leptos_store::store::Store;
+/// # use leptos_store::composition::{RootStore, CompositeStore};
+/// # #[derive(Clone, Debug, Default)]
+/// # struct AuthState;
+/// # #[derive(Clone)]
+/// # struct AuthStore { state: RwSignal<AuthState> }
+/// # impl AuthStore { fn new() -> Self { Self { state: RwSignal::new(AuthState) } } }
+/// # impl Store for AuthStore {
+/// #     type State = AuthState;
+/// #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+/// # }
+/// # #[derive(Clone, Debug, Default)]
+/// # struct CartState;
+/// # #[derive(Clone)]
+/// # struct CartStore { state: RwSignal<CartState> }
+/// # impl CartStore { fn new() -> Self { Self { state: RwSignal::new(CartState) } } }
+/// # impl Store for CartStore {
+/// #     type State = CartState;
+/// #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+/// # }
 /// let root = RootStore::builder()
 ///     .with_store(AuthStore::new())
 ///     .with_store(CartStore::new())
 ///     .build();
 ///
-/// provide_context(root.clone());
-///
-/// // Later, access a specific store
-/// let root = use_context::<RootStore>().unwrap();
+/// // Access a specific store
 /// let auth = root.get::<AuthStore>().unwrap();
 /// ```
 #[derive(Clone)]
@@ -268,8 +312,23 @@ impl RootStoreBuilder {
 ///
 /// # Example
 ///
-/// ```rust,ignore
-/// use leptos_store::composition::*;
+/// ```rust
+/// # use leptos::prelude::{RwSignal, ReadSignal};
+/// # use leptos_store::store::Store;
+/// use leptos_store::composition::StoreDependency;
+/// # #[derive(Clone, Debug, Default)]
+/// # struct AuthState { authenticated: bool }
+/// # #[derive(Clone)]
+/// # struct AuthStore { state: RwSignal<AuthState> }
+/// # impl AuthStore {
+/// #     fn is_authenticated(&self) -> bool { true }
+/// # }
+/// # impl Store for AuthStore {
+/// #     type State = AuthState;
+/// #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+/// # }
+/// # #[derive(Clone, Debug, Default)]
+/// # struct CartState;
 ///
 /// struct CartStore {
 ///     state: RwSignal<CartState>,
