@@ -150,6 +150,10 @@ pub mod middleware;
 #[cfg_attr(docsrs, doc(cfg(feature = "middleware")))]
 pub mod audit;
 
+#[cfg(feature = "middleware")]
+#[cfg_attr(docsrs, doc(cfg(feature = "middleware")))]
+pub mod coordination;
+
 #[cfg(feature = "devtools")]
 #[cfg_attr(docsrs, doc(cfg(feature = "devtools")))]
 pub mod devtools;

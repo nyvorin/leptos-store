@@ -86,6 +86,10 @@ pub use crate::audit::{
     AuditEntry, AuditTrail, AuditUserContext, ChangeType, FieldChange, StateDiff,
 };
 
+#[cfg(feature = "middleware")]
+#[cfg_attr(docsrs, doc(cfg(feature = "middleware")))]
+pub use crate::coordination::StoreCoordinator;
+
 // Devtools support (when feature is enabled)
 #[cfg(feature = "devtools")]
 #[cfg_attr(docsrs, doc(cfg(feature = "devtools")))]
