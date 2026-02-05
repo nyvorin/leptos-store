@@ -8,9 +8,9 @@
 async fn main() -> std::io::Result<()> {
     use actix_files::Files;
     use actix_web::*;
+    use feature_flags_example::components::App;
     use leptos::prelude::*;
     use leptos_actix::{LeptosRoutes, generate_route_list};
-    use feature_flags_example::components::App;
 
     if std::env::var("LEPTOS_OUTPUT_NAME").is_err() {
         unsafe {

@@ -35,7 +35,7 @@ pub fn App() -> impl IntoView {
         // Add logging middleware - logs all mutations to console
         middleware_store.add_middleware(LoggingMiddleware::new());
 
-        // Add timing middleware - warns on slow operations  
+        // Add timing middleware - warns on slow operations
         middleware_store.add_middleware(TimingMiddleware::new());
 
         provide_context(middleware_store);

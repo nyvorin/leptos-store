@@ -160,11 +160,7 @@ fn CartPanel() -> impl IntoView {
     let cart_total = cart.clone();
 
     // Sample products
-    let products = vec![
-        ("Widget", 9.99),
-        ("Gadget", 19.99),
-        ("Gizmo", 14.99),
-    ];
+    let products = vec![("Widget", 9.99), ("Gadget", 19.99), ("Gizmo", 14.99)];
 
     view! {
         <div class="panel cart-panel">

@@ -80,12 +80,14 @@ impl TaskStore {
 
     /// Get the active (incomplete) task count.
     pub fn active_count(&self) -> usize {
-        self.state.with(|s| s.tasks.iter().filter(|t| !t.completed).count())
+        self.state
+            .with(|s| s.tasks.iter().filter(|t| !t.completed).count())
     }
 
     /// Get the completed task count.
     pub fn completed_count(&self) -> usize {
-        self.state.with(|s| s.tasks.iter().filter(|t| t.completed).count())
+        self.state
+            .with(|s| s.tasks.iter().filter(|t| t.completed).count())
     }
 
     /// Get the current filter.

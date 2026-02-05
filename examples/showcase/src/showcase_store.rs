@@ -38,7 +38,7 @@ impl ExampleCategory {
             Self::Integration => "Integration",
         }
     }
-    
+
     pub fn color(&self) -> &'static str {
         match self {
             Self::Core => "#3b82f6",
@@ -64,7 +64,7 @@ impl Difficulty {
             Self::Advanced => "Advanced",
         }
     }
-    
+
     pub fn color(&self) -> &'static str {
         match self {
             Self::Beginner => "#22c55e",
@@ -192,67 +192,70 @@ impl ShowcaseStore {
             }),
         }
     }
-    
+
     /// Mark an example as visited
     pub fn mark_visited(&self, example_id: &str) {
         self.state.update(|s| {
             s.visited.insert(example_id.to_string());
         });
     }
-    
+
     /// Check if an example was visited
     pub fn is_visited(&self, example_id: &str) -> bool {
         self.state.get().visited.contains(example_id)
     }
-    
+
     /// Set category filter
     pub fn set_category_filter(&self, category: Option<String>) {
         self.state.update(|s| {
             s.category_filter = category;
         });
     }
-    
+
     /// Set search query
     pub fn set_search_query(&self, query: String) {
         self.state.update(|s| {
             s.search_query = query;
         });
     }
-    
+
     /// Toggle dark mode
     pub fn toggle_dark_mode(&self) {
         self.state.update(|s| {
             s.dark_mode = !s.dark_mode;
         });
     }
-    
+
     /// Get filtered examples
     pub fn get_filtered_examples(&self) -> Vec<&'static ExampleInfo> {
         let state = self.state.get();
         let query = state.search_query.to_lowercase();
-        
-        EXAMPLES.iter().filter(|e| {
-            // Category filter
-            if let Some(ref cat) = state.category_filter {
-                if e.category.label() != cat {
-                    return false;
+
+        EXAMPLES
+            .iter()
+            .filter(|e| {
+                // Category filter
+                if let Some(ref cat) = state.category_filter {
+                    if e.category.label() != cat {
+                        return false;
+                    }
                 }
-            }
-            
-            // Search filter
-            if !query.is_empty() {
-                let matches = e.name.to_lowercase().contains(&query)
-                    || e.description.to_lowercase().contains(&query)
-                    || e.features.iter().any(|f| f.to_lowercase().contains(&query));
-                if !matches {
-                    return false;
+
+                // Search filter
+                if !query.is_empty() {
+                    let matches = e.name.to_lowercase().contains(&query)
+                        || e.description.to_lowercase().contains(&query)
+                        || e.features.iter().any(|f| f.to_lowercase().contains(&query));
+                    if !matches {
+                        return false;
+                    }
                 }
-            }
-            
-            true
-        }).collect()
+
+                true
+            })
+            .collect()
     }
-    
+
     /// Get visit count
     pub fn visit_count(&self) -> usize {
         self.state.get().visited.len()
@@ -261,11 +264,11 @@ impl ShowcaseStore {
 
 impl Store for ShowcaseStore {
     type State = ShowcaseState;
-    
+
     fn state(&self) -> ReadSignal<Self::State> {
         self.state.read_only()
     }
-    
+
     fn name(&self) -> &'static str {
         "ShowcaseStore"
     }

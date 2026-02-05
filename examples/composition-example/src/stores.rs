@@ -51,11 +51,7 @@ impl AuthStore {
 
     pub fn login(&self, name: String, email: String) {
         self.state.update(|s| {
-            s.user = Some(User {
-                id: 1,
-                name,
-                email,
-            });
+            s.user = Some(User { id: 1, name, email });
             s.loading = false;
         });
     }
@@ -118,16 +114,13 @@ impl CartStore {
     }
 
     pub fn item_count(&self) -> usize {
-        self.state.with(|s| s.items.iter().map(|i| i.quantity as usize).sum())
+        self.state
+            .with(|s| s.items.iter().map(|i| i.quantity as usize).sum())
     }
 
     pub fn total(&self) -> f64 {
-        self.state.with(|s| {
-            s.items
-                .iter()
-                .map(|i| i.price * i.quantity as f64)
-                .sum()
-        })
+        self.state
+            .with(|s| s.items.iter().map(|i| i.price * i.quantity as f64).sum())
     }
 
     pub fn add_item(&self, name: String, price: f64) {

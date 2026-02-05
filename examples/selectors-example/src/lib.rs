@@ -22,8 +22,7 @@ use leptos_router::{
     path,
 };
 use leptos_store::prelude::{
-    provide_store, use_store,
-    create_selector, combine_selectors, map_selector, filter_selector,
+    combine_selectors, create_selector, filter_selector, map_selector, provide_store, use_store,
 };
 use leptos_store::{selector, store};
 
@@ -269,10 +268,7 @@ fn NotificationPanel() -> impl IntoView {
         if *count == 0 {
             "No notifications".to_string()
         } else {
-            format!(
-                "{count} notification{}",
-                if *count == 1 { "" } else { "s" }
-            )
+            format!("{count} notification{}", if *count == 1 { "" } else { "s" })
         }
     });
 

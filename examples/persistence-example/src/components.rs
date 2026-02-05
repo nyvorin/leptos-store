@@ -32,7 +32,7 @@ pub fn App() -> impl IntoView {
             .with_key("notes_store")
             .with_key_prefix("persistence_example")
             .with_version(1);
-        
+
         // Load persisted state on mount
         let ps_load = ps.clone();
         let store_load = store.clone();

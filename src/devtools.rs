@@ -176,9 +176,24 @@ fn init_console_api() {
                 let result = js_sys::Object::new();
                 for info in state.stores.values() {
                     let store_obj = js_sys::Object::new();
-                    js_sys::Reflect::set(&store_obj, &JsValue::from_str("name"), &JsValue::from_str(&info.name)).ok();
-                    js_sys::Reflect::set(&store_obj, &JsValue::from_str("type"), &JsValue::from_str(info.type_name)).ok();
-                    js_sys::Reflect::set(&store_obj, &JsValue::from_str("registeredAt"), &JsValue::from_f64(info.registered_at as f64)).ok();
+                    js_sys::Reflect::set(
+                        &store_obj,
+                        &JsValue::from_str("name"),
+                        &JsValue::from_str(&info.name),
+                    )
+                    .ok();
+                    js_sys::Reflect::set(
+                        &store_obj,
+                        &JsValue::from_str("type"),
+                        &JsValue::from_str(info.type_name),
+                    )
+                    .ok();
+                    js_sys::Reflect::set(
+                        &store_obj,
+                        &JsValue::from_str("registeredAt"),
+                        &JsValue::from_f64(info.registered_at as f64),
+                    )
+                    .ok();
                     js_sys::Reflect::set(&result, &JsValue::from_str(&info.key), &store_obj).ok();
                 }
                 result.into()
@@ -198,42 +213,68 @@ fn init_console_api() {
     // Add getState function - returns a JS object with state info
     let get_state = Closure::wrap(Box::new(|key: String| -> JsValue {
         // Try to get state from thread_local getters
-        let state_result = STATE_GETTERS.with(|getters| {
-            getters.borrow().get(&key).map(|getter| getter())
-        });
-        
+        let state_result =
+            STATE_GETTERS.with(|getters| getters.borrow().get(&key).map(|getter| getter()));
+
         match state_result {
             Some(state_str) => {
                 let obj = js_sys::Object::new();
-                js_sys::Reflect::set(&obj, &JsValue::from_str("key"), &JsValue::from_str(&key)).ok();
-                
+                js_sys::Reflect::set(&obj, &JsValue::from_str("key"), &JsValue::from_str(&key))
+                    .ok();
+
                 // Add type info if available from devtools state
                 if let Some(devtools_state) = get_devtools_state() {
                     if let Some(info) = devtools_state.stores.get(&key) {
-                        js_sys::Reflect::set(&obj, &JsValue::from_str("type"), &JsValue::from_str(info.type_name)).ok();
-                        js_sys::Reflect::set(&obj, &JsValue::from_str("name"), &JsValue::from_str(&info.name)).ok();
+                        js_sys::Reflect::set(
+                            &obj,
+                            &JsValue::from_str("type"),
+                            &JsValue::from_str(info.type_name),
+                        )
+                        .ok();
+                        js_sys::Reflect::set(
+                            &obj,
+                            &JsValue::from_str("name"),
+                            &JsValue::from_str(&info.name),
+                        )
+                        .ok();
                     }
                 }
-                
+
                 // Get state - check if it's JSON or Debug formatted
                 if let Some(json_str) = state_str.strip_prefix("JSON:") {
                     // Parse as JSON for proper JS object
                     if let Ok(parsed) = js_sys::JSON::parse(json_str) {
                         js_sys::Reflect::set(&obj, &JsValue::from_str("state"), &parsed).ok();
                     } else {
-                        js_sys::Reflect::set(&obj, &JsValue::from_str("state"), &JsValue::from_str(json_str)).ok();
+                        js_sys::Reflect::set(
+                            &obj,
+                            &JsValue::from_str("state"),
+                            &JsValue::from_str(json_str),
+                        )
+                        .ok();
                     }
                 } else {
                     // Debug formatted string
-                    js_sys::Reflect::set(&obj, &JsValue::from_str("state"), &JsValue::from_str(&state_str)).ok();
+                    js_sys::Reflect::set(
+                        &obj,
+                        &JsValue::from_str("state"),
+                        &JsValue::from_str(&state_str),
+                    )
+                    .ok();
                 }
                 obj.into()
             }
             None => {
                 // Return an error object
                 let err = js_sys::Object::new();
-                js_sys::Reflect::set(&err, &JsValue::from_str("error"), &JsValue::from_str("Store not found")).ok();
-                js_sys::Reflect::set(&err, &JsValue::from_str("key"), &JsValue::from_str(&key)).ok();
+                js_sys::Reflect::set(
+                    &err,
+                    &JsValue::from_str("error"),
+                    &JsValue::from_str("Store not found"),
+                )
+                .ok();
+                js_sys::Reflect::set(&err, &JsValue::from_str("key"), &JsValue::from_str(&key))
+                    .ok();
                 let available = js_sys::Array::new();
                 if let Some(devtools_state) = get_devtools_state() {
                     for k in devtools_state.stores.keys() {
@@ -262,14 +303,34 @@ fn init_console_api() {
                 let arr = js_sys::Array::new();
                 for event in state.events.iter().rev().take(count) {
                     let obj = js_sys::Object::new();
-                    js_sys::Reflect::set(&obj, &JsValue::from_str("type"), &JsValue::from_str(&event.event_type)).ok();
-                    js_sys::Reflect::set(&obj, &JsValue::from_str("store"), &JsValue::from_str(event.store_name.as_deref().unwrap_or("-"))).ok();
-                    js_sys::Reflect::set(&obj, &JsValue::from_str("timestamp"), &JsValue::from_f64(event.timestamp as f64)).ok();
+                    js_sys::Reflect::set(
+                        &obj,
+                        &JsValue::from_str("type"),
+                        &JsValue::from_str(&event.event_type),
+                    )
+                    .ok();
+                    js_sys::Reflect::set(
+                        &obj,
+                        &JsValue::from_str("store"),
+                        &JsValue::from_str(event.store_name.as_deref().unwrap_or("-")),
+                    )
+                    .ok();
+                    js_sys::Reflect::set(
+                        &obj,
+                        &JsValue::from_str("timestamp"),
+                        &JsValue::from_f64(event.timestamp as f64),
+                    )
+                    .ok();
                     // Parse payload as JSON if possible
                     if let Ok(payload) = js_sys::JSON::parse(&event.payload) {
                         js_sys::Reflect::set(&obj, &JsValue::from_str("payload"), &payload).ok();
                     } else {
-                        js_sys::Reflect::set(&obj, &JsValue::from_str("payload"), &JsValue::from_str(&event.payload)).ok();
+                        js_sys::Reflect::set(
+                            &obj,
+                            &JsValue::from_str("payload"),
+                            &JsValue::from_str(&event.payload),
+                        )
+                        .ok();
                     }
                     arr.push(&obj);
                 }
@@ -339,7 +400,7 @@ fn get_devtools_state_mut() -> Option<std::sync::RwLockWriteGuard<'static, Devto
 
 /// Register a store with devtools using Debug formatting.
 ///
-/// The store's state will be accessible via `__LEPTOS_STORE__.getState("key")` 
+/// The store's state will be accessible via `__LEPTOS_STORE__.getState("key")`
 /// in the browser console. State is shown as a formatted Debug string.
 ///
 /// For proper JSON object output, use [`register_store_json`] instead.
@@ -349,7 +410,7 @@ where
 {
     let key = key.into();
     let store_name = store.name().to_string();
-    
+
     if let Some(mut devtools_state) = get_devtools_state_mut() {
         let info = StoreInfo {
             name: store_name.clone(),
@@ -358,7 +419,7 @@ where
             registered_at: current_timestamp_ms(),
         };
         devtools_state.stores.insert(info.key.clone(), info);
-        
+
         // Record a registration event
         devtools_state.events.push(DevtoolsEvent {
             event_type: "StoreRegistered".to_string(),
@@ -366,21 +427,19 @@ where
             payload: format!(r#"{{"key":"{}"}}"#, key),
             timestamp: current_timestamp_ms(),
         });
-        
     }
-    
+
     // Store a Debug-based state getter (WASM only, in thread_local)
     #[cfg(target_arch = "wasm32")]
     {
         let state_signal = store.state();
-        let getter: StateGetter = std::rc::Rc::new(move || {
-            format!("{:#?}", state_signal.get_untracked())
-        });
+        let getter: StateGetter =
+            std::rc::Rc::new(move || format!("{:#?}", state_signal.get_untracked()));
         STATE_GETTERS.with(|getters| {
             getters.borrow_mut().insert(key.clone(), getter);
         });
     }
-    
+
     // Set up automatic state change tracking with snapshots (WASM only)
     #[cfg(target_arch = "wasm32")]
     {
@@ -390,13 +449,19 @@ where
         Effect::new(move |prev_state: Option<String>| {
             // Get current state as Debug string
             let current_state = format!("{:#?}", state_signal.get());
-            
+
             // Record event with old and new state (skip first run)
             if let Some(old_state) = prev_state {
                 // Escape strings for JSON
-                let old_escaped = old_state.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', "\\n");
-                let new_escaped = current_state.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', "\\n");
-                
+                let old_escaped = old_state
+                    .replace('\\', "\\\\")
+                    .replace('"', "\\\"")
+                    .replace('\n', "\\n");
+                let new_escaped = current_state
+                    .replace('\\', "\\\\")
+                    .replace('"', "\\\"")
+                    .replace('\n', "\\n");
+
                 record_event(DevtoolsEvent {
                     event_type: "StateChanged".to_string(),
                     store_name: Some(name_for_effect.clone()),
@@ -407,7 +472,7 @@ where
                     timestamp: current_timestamp_ms(),
                 });
             }
-            
+
             current_state
         });
     }
@@ -415,10 +480,10 @@ where
 
 /// Register a store with devtools using JSON serialization.
 ///
-/// The store's state will be accessible via `__LEPTOS_STORE__.getState("key")` 
+/// The store's state will be accessible via `__LEPTOS_STORE__.getState("key")`
 /// in the browser console as a proper JavaScript object.
 ///
-/// Requires `State: Serialize`. For types that only implement `Debug`, 
+/// Requires `State: Serialize`. For types that only implement `Debug`,
 /// use [`register_store`] instead.
 pub fn register_store_json<S: Store>(store: &S, key: impl Into<String>)
 where
@@ -426,7 +491,7 @@ where
 {
     let key = key.into();
     let store_name = store.name().to_string();
-    
+
     if let Some(mut devtools_state) = get_devtools_state_mut() {
         let info = StoreInfo {
             name: store_name.clone(),
@@ -435,7 +500,7 @@ where
             registered_at: current_timestamp_ms(),
         };
         devtools_state.stores.insert(info.key.clone(), info);
-        
+
         // Record a registration event
         devtools_state.events.push(DevtoolsEvent {
             event_type: "StoreRegistered".to_string(),
@@ -443,21 +508,24 @@ where
             payload: format!(r#"{{"key":"{}"}}"#, key),
             timestamp: current_timestamp_ms(),
         });
-        
     }
-    
+
     // Store a JSON-based state getter (WASM only, in thread_local)
     #[cfg(target_arch = "wasm32")]
     {
         let state_signal = store.state();
         let getter: StateGetter = std::rc::Rc::new(move || {
-            format!("JSON:{}", serde_json::to_string(&state_signal.get_untracked()).unwrap_or_else(|_| "{}".to_string()))
+            format!(
+                "JSON:{}",
+                serde_json::to_string(&state_signal.get_untracked())
+                    .unwrap_or_else(|_| "{}".to_string())
+            )
         });
         STATE_GETTERS.with(|getters| {
             getters.borrow_mut().insert(key.clone(), getter);
         });
     }
-    
+
     // Set up automatic state change tracking with JSON snapshots (WASM only)
     #[cfg(target_arch = "wasm32")]
     {
@@ -466,9 +534,9 @@ where
         let name_for_effect = store_name;
         Effect::new(move |prev_json: Option<String>| {
             // Serialize current state to JSON
-            let current_json = serde_json::to_string(&state_signal.get())
-                .unwrap_or_else(|_| "{}".to_string());
-            
+            let current_json =
+                serde_json::to_string(&state_signal.get()).unwrap_or_else(|_| "{}".to_string());
+
             // Record event with old and new JSON state (skip first run)
             if let Some(old_json) = prev_json {
                 record_event(DevtoolsEvent {
@@ -481,7 +549,7 @@ where
                     timestamp: current_timestamp_ms(),
                 });
             }
-            
+
             current_json
         });
     }
@@ -659,15 +727,11 @@ pub fn StoreInspector(
     let get_current_state = move || -> Option<String> {
         let _ = refresh_counter.get();
         let key = selected_store.get()?;
-        STATE_GETTERS.with(|getters| {
-            getters.borrow().get(&key).map(|getter| getter())
-        })
+        STATE_GETTERS.with(|getters| getters.borrow().get(&key).map(|getter| getter()))
     };
-    
+
     #[cfg(not(target_arch = "wasm32"))]
-    let get_current_state = move || -> Option<String> {
-        None
-    };
+    let get_current_state = move || -> Option<String> { None };
 
     // Update events
     let update_events = move || {
@@ -817,7 +881,7 @@ pub fn StoreInspector(
                                     "↻ Refresh"
                                 </button>
                             </div>
-                            
+
                             <div style="flex: 1; overflow: auto; padding: 16px;">
                                 <div style="font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 12px; line-height: 1.6;">
                                     {move || {
@@ -928,12 +992,13 @@ pub fn StoreInspector(
 fn JsonTreeView(json: String) -> impl IntoView {
     // Parse JSON and render as expandable tree
     let parsed = serde_json::from_str::<serde_json::Value>(&json);
-    
+
     match parsed {
         Ok(value) => view! { <JsonValue value=value depth=0 /> }.into_any(),
         Err(_) => view! {
             <pre style="margin: 0; color: #f87171;">{format!("Invalid JSON: {}", json)}</pre>
-        }.into_any()
+        }
+        .into_any(),
     }
 }
 
@@ -941,22 +1006,26 @@ fn JsonTreeView(json: String) -> impl IntoView {
 #[component]
 fn JsonValue(value: serde_json::Value, depth: usize) -> impl IntoView {
     let indent = depth * 16;
-    
+
     match value {
         serde_json::Value::Null => view! {
             <span style="color: #6b7280;">"null"</span>
-        }.into_any(),
+        }
+        .into_any(),
         serde_json::Value::Bool(b) => view! {
             <span style="color: #fbbf24;">{b.to_string()}</span>
-        }.into_any(),
+        }
+        .into_any(),
         serde_json::Value::Number(n) => view! {
             <span style="color: #34d399;">{n.to_string()}</span>
-        }.into_any(),
+        }
+        .into_any(),
         serde_json::Value::String(s) => view! {
             <span style="color: #fb923c;">"\""</span>
             <span style="color: #fbbf24;">{s}</span>
             <span style="color: #fb923c;">"\""</span>
-        }.into_any(),
+        }
+        .into_any(),
         serde_json::Value::Array(arr) => {
             let is_expanded = RwSignal::new(depth < 2);
             let len = arr.len();
@@ -1024,7 +1093,8 @@ fn JsonValue(value: serde_json::Value, depth: usize) -> impl IntoView {
                         <span style="color: #a78bfa;">"}"</span>
                     </Show>
                 </div>
-            }.into_any()
+            }
+            .into_any()
         }
     }
 }
@@ -1038,10 +1108,10 @@ fn CollapsibleSection(
     children: Children,
 ) -> impl IntoView {
     let is_expanded = RwSignal::new(true);
-    
+
     view! {
         <div style="background: #1f2937; border-radius: 6px; overflow: hidden;">
-            <div 
+            <div
                 style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #374151; user-select: none;"
                 on:click=move |_| is_expanded.update(|e| *e = !*e)
             >
@@ -1068,18 +1138,16 @@ fn CollapsibleSection(
 #[component]
 fn EventDetailView(event: DevtoolsEvent) -> impl IntoView {
     let payload_json: Option<serde_json::Value> = serde_json::from_str(&event.payload).ok();
-    
+
     // Extract old/new values if present
     let (old_value, new_value) = match &payload_json {
-        Some(serde_json::Value::Object(obj)) => {
-            (obj.get("old").cloned(), obj.get("new").cloned())
-        }
-        _ => (None, None)
+        Some(serde_json::Value::Object(obj)) => (obj.get("old").cloned(), obj.get("new").cloned()),
+        _ => (None, None),
     };
-    
+
     let has_diff = old_value.is_some() && new_value.is_some();
     let raw_payload = event.payload.clone();
-    
+
     view! {
         <div style="font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 12px;">
             // Event header
@@ -1104,7 +1172,7 @@ fn EventDetailView(event: DevtoolsEvent) -> impl IntoView {
                     <span>{format_timestamp(event.timestamp)}</span>
                 </div>
             </div>
-            
+
             // State diff view for StateChanged events - stacked vertically
             {if has_diff {
                 let old_val = old_value.unwrap();
@@ -1114,11 +1182,11 @@ fn EventDetailView(event: DevtoolsEvent) -> impl IntoView {
                         <CollapsibleSection title="BEFORE" color="#f87171" icon="◀">
                             <JsonValue value=old_val depth=0 />
                         </CollapsibleSection>
-                        
+
                         <div style="display: flex; justify-content: center; color: #6b7280;">
                             <span style="font-size: 18px;">"↓"</span>
                         </div>
-                        
+
                         <CollapsibleSection title="AFTER" color="#34d399" icon="▶">
                             <JsonValue value=new_val depth=0 />
                         </CollapsibleSection>
@@ -1152,7 +1220,7 @@ fn format_timestamp(ts: u64) -> String {
     // Simple formatting - just show relative or absolute time
     let now = current_timestamp_ms();
     let diff = now.saturating_sub(ts);
-    
+
     if diff < 1000 {
         "just now".to_string()
     } else if diff < 60_000 {

@@ -375,11 +375,7 @@ impl<State: Clone + Send + Sync + 'static> Default for AuditTrail<State> {
 
 impl<State: Clone + Send + Sync + 'static> fmt::Debug for AuditTrail<State> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let count = self
-            .entries
-            .read()
-            .map(|e| e.len())
-            .unwrap_or(0);
+        let count = self.entries.read().map(|e| e.len()).unwrap_or(0);
         f.debug_struct("AuditTrail")
             .field("entry_count", &count)
             .field("max_entries", &self.max_entries)
@@ -450,12 +446,8 @@ impl<State: Clone + Send + Sync + 'static> AuditTrail<State> {
     ///
     /// Requires `State: StateDiff`. Computes the field-level differences
     /// between the before and after states and includes them in the entry.
-    pub fn record_with_diff(
-        &self,
-        mutation_name: &str,
-        state_before: &State,
-        state_after: &State,
-    ) where
+    pub fn record_with_diff(&self, mutation_name: &str, state_before: &State, state_after: &State)
+    where
         State: StateDiff,
     {
         let changes = state_before.diff(state_after);
@@ -494,10 +486,7 @@ impl<State: Clone + Send + Sync + 'static> AuditTrail<State> {
 
     /// Return a snapshot of all audit entries, ordered from oldest to newest.
     pub fn entries(&self) -> Vec<AuditEntry<State>> {
-        self.entries
-            .read()
-            .map(|e| e.clone())
-            .unwrap_or_default()
+        self.entries.read().map(|e| e.clone()).unwrap_or_default()
     }
 
     /// Return entries filtered by mutation name.
@@ -539,8 +528,7 @@ impl<State: Clone + Send + Sync + 'static> AuditTrail<State> {
     /// This enables state replay: you can inspect what the state looked like
     /// at any recorded point in time.
     pub fn state_at(&self, entry_id: u64) -> Option<State> {
-        self.entry_by_id(entry_id)
-            .map(|entry| entry.state_after)
+        self.entry_by_id(entry_id).map(|entry| entry.state_after)
     }
 
     /// Return the number of entries currently stored.
@@ -777,10 +765,7 @@ mod tests {
             new_value: "Bob".into(),
             change_type: ChangeType::Modified,
         };
-        assert_eq!(
-            format!("{}", modified),
-            "user.name: 'Alice' -> 'Bob'"
-        );
+        assert_eq!(format!("{}", modified), "user.name: 'Alice' -> 'Bob'");
 
         let added = FieldChange {
             field_path: "user.email".into(),
@@ -788,10 +773,7 @@ mod tests {
             new_value: "bob@example.com".into(),
             change_type: ChangeType::Added,
         };
-        assert_eq!(
-            format!("{}", added),
-            "user.email: added 'bob@example.com'"
-        );
+        assert_eq!(format!("{}", added), "user.email: added 'bob@example.com'");
 
         let removed = FieldChange {
             field_path: "user.nickname".into(),
@@ -799,10 +781,7 @@ mod tests {
             new_value: String::new(),
             change_type: ChangeType::Removed,
         };
-        assert_eq!(
-            format!("{}", removed),
-            "user.nickname: removed 'Bobby'"
-        );
+        assert_eq!(format!("{}", removed), "user.nickname: removed 'Bobby'");
 
         // Also verify ChangeType Display
         assert_eq!(format!("{}", ChangeType::Modified), "Modified");
@@ -820,8 +799,16 @@ mod tests {
             }
         }
 
-        let a = MacroTestState { name: "Alice".into(), age: 30, active: true };
-        let b = MacroTestState { name: "Alice".into(), age: 31, active: false };
+        let a = MacroTestState {
+            name: "Alice".into(),
+            age: 30,
+            active: true,
+        };
+        let b = MacroTestState {
+            name: "Alice".into(),
+            age: 31,
+            active: false,
+        };
 
         let diffs = a.diff(&b);
         assert_eq!(diffs.len(), 2);

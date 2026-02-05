@@ -29,13 +29,13 @@ pub fn App() -> impl IntoView {
 
     // Create and provide the counter store
     let store = CounterStore::new();
-    
+
     // Register with devtools (client-side only)
     #[cfg(feature = "hydrate")]
     {
         register_store_json(&store, "counter");
     }
-    
+
     provide_store(store);
 
     view! {
@@ -60,7 +60,7 @@ pub fn App() -> impl IntoView {
 fn DevtoolsInspector() -> impl IntoView {
     // Use a signal that flips to true after hydration to avoid SSR/client mismatch
     let is_mounted = RwSignal::new(false);
-    
+
     // Set mounted to true after initial render (client-side only)
     Effect::new(move |_| {
         is_mounted.set(true);

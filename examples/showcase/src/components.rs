@@ -9,9 +9,7 @@ use leptos_router::components::*;
 use leptos_router::path;
 use leptos_store::provide_store;
 
-use crate::showcase_store::{
-    ShowcaseStore, ExampleInfo, ExampleCategory, Difficulty, EXAMPLES,
-};
+use crate::showcase_store::{Difficulty, EXAMPLES, ExampleCategory, ExampleInfo, ShowcaseStore};
 
 /// Global styles
 const GLOBAL_STYLES: &str = r#"
@@ -96,17 +94,17 @@ const GLOBAL_STYLES: &str = r#"
 #[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
-    
+
     let store = ShowcaseStore::new();
     provide_store(store.clone());
     provide_context(store);
-    
+
     view! {
         <Stylesheet id="leptos" href="/pkg/showcase.css"/>
         <Style>{GLOBAL_STYLES}</Style>
         <Title text="Leptos Store - Examples Showcase"/>
         <Meta name="description" content="Explore all leptos-store examples in one place"/>
-        
+
         <Router>
             <Routes fallback=|| "Page not found">
                 <Route path=path!("/") view=HomePage />
@@ -121,11 +119,11 @@ fn HomePage() -> impl IntoView {
     let store = use_context::<ShowcaseStore>().expect("ShowcaseStore not found");
     let store2 = store.clone();
     let store3 = store.clone();
-    
+
     view! {
         <div style="min-height: 100vh; display: flex; flex-direction: column;">
             <Header />
-            
+
             <main style="flex: 1; max-width: 1400px; margin: 0 auto; padding: 40px 24px; width: 100%;">
                 // Hero section
                 <section style="text-align: center; margin-bottom: 60px;">
@@ -135,30 +133,30 @@ fn HomePage() -> impl IntoView {
                     <p style="font-size: 1.25rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto 32px;">
                         "Explore state management patterns, from basic counters to advanced middleware and devtools integration."
                     </p>
-                    
+
                     // Stats
                     <div style="display: flex; justify-content: center; gap: 48px; margin-bottom: 32px;">
-                        <StatItem 
+                        <StatItem
                             value=move || EXAMPLES.len().to_string()
                             label="Examples"
                             icon="📚"
                         />
-                        <StatItem 
+                        <StatItem
                             value=move || store.visit_count().to_string()
                             label="Visited"
                             icon="✅"
                         />
-                        <StatItem 
+                        <StatItem
                             value=move || "4".to_string()
                             label="Categories"
                             icon="📂"
                         />
                     </div>
                 </section>
-                
+
                 // Filters
                 <FilterBar />
-                
+
                 // Examples grid
                 <section style="margin-top: 32px;">
                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px;">
@@ -174,7 +172,7 @@ fn HomePage() -> impl IntoView {
                     </div>
                 </section>
             </main>
-            
+
             <Footer />
         </div>
     }
@@ -193,10 +191,10 @@ fn Header() -> impl IntoView {
                         <span style="font-size: 0.75rem; color: var(--text-muted);">"v0.2.0"</span>
                     </div>
                 </div>
-                
+
                 <nav style="display: flex; align-items: center; gap: 24px;">
-                    <a 
-                        href="https://github.com/webmech/leptos-store" 
+                    <a
+                        href="https://github.com/webmech/leptos-store"
                         target="_blank"
                         style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary); transition: color 0.2s;"
                     >
@@ -205,8 +203,8 @@ fn Header() -> impl IntoView {
                         </svg>
                         "GitHub"
                     </a>
-                    <a 
-                        href="https://docs.rs/leptos-store" 
+                    <a
+                        href="https://docs.rs/leptos-store"
                         target="_blank"
                         style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary); transition: color 0.2s;"
                     >
@@ -221,11 +219,7 @@ fn Header() -> impl IntoView {
 
 /// Stat item component
 #[component]
-fn StatItem<F>(
-    value: F,
-    label: &'static str,
-    icon: &'static str,
-) -> impl IntoView 
+fn StatItem<F>(value: F, label: &'static str, icon: &'static str) -> impl IntoView
 where
     F: Fn() -> String + Send + Sync + 'static,
 {
@@ -243,17 +237,17 @@ where
 fn FilterBar() -> impl IntoView {
     let store = use_context::<ShowcaseStore>().expect("ShowcaseStore not found");
     let store2 = store.clone();
-    
+
     let search_query = RwSignal::new(String::new());
     let active_category = RwSignal::new(Option::<String>::None);
-    
+
     let categories = [
         ExampleCategory::Core,
         ExampleCategory::State,
         ExampleCategory::Advanced,
         ExampleCategory::Integration,
     ];
-    
+
     view! {
         <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; padding: 20px 24px; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border);">
             // Search input
@@ -273,7 +267,7 @@ fn FilterBar() -> impl IntoView {
                     }
                 />
             </div>
-            
+
             // Category filters
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 {
@@ -295,7 +289,7 @@ fn FilterBar() -> impl IntoView {
                         </button>
                     }
                 }
-                
+
                 {categories.into_iter().map(|cat| {
                     let store = store2.clone();
                     let label = cat.label();
@@ -329,13 +323,13 @@ fn ExampleCard(example: &'static ExampleInfo, store: ShowcaseStore) -> impl Into
     let url = format!("http://127.0.0.1:{}", example.port);
     let url2 = url.clone();
     let example_id = example.id.to_string();
-    
+
     let is_visited = {
         let store = store.clone();
         let id = example.id.to_string();
         move || store.is_visited(&id)
     };
-    
+
     view! {
         <article
             style=move || format!(
@@ -367,12 +361,12 @@ fn ExampleCard(example: &'static ExampleInfo, store: ShowcaseStore) -> impl Into
             )>
                 {example.category.label()}
             </div>
-            
+
             // Visited indicator
             <Show when=is_visited>
                 <div style="position: absolute; top: 16px; left: 16px; width: 8px; height: 8px; background: var(--success); border-radius: 50%;" title="Visited" />
             </Show>
-            
+
             // Icon and title
             <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
                 <div style="width: 56px; height: 56px; background: var(--bg-tertiary); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 28px;">
@@ -383,12 +377,12 @@ fn ExampleCard(example: &'static ExampleInfo, store: ShowcaseStore) -> impl Into
                     <DifficultyBadge difficulty=example.difficulty />
                 </div>
             </div>
-            
+
             // Description
             <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6; margin-bottom: 20px;">
                 {example.description}
             </p>
-            
+
             // Features
             <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;">
                 {example.features.iter().map(|feature| {
@@ -399,7 +393,7 @@ fn ExampleCard(example: &'static ExampleInfo, store: ShowcaseStore) -> impl Into
                     }
                 }).collect_view()}
             </div>
-            
+
             // Port info and launch button
             <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid var(--border);">
                 <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-muted);">
@@ -425,7 +419,7 @@ fn DifficultyBadge(difficulty: Difficulty) -> impl IntoView {
         Difficulty::Intermediate => 2,
         Difficulty::Advanced => 3,
     };
-    
+
     view! {
         <div style="display: flex; align-items: center; gap: 6px;">
             <div style="display: flex; gap: 3px;">
@@ -463,7 +457,7 @@ fn Footer() -> impl IntoView {
                         "© 2026 web-mech. Apache-2.0 License."
                     </p>
                 </div>
-                
+
                 <div style="display: flex; gap: 24px;">
                     <a href="https://leptos.dev" target="_blank" style="color: var(--text-muted); font-size: 0.875rem; transition: color 0.2s;">
                         "Leptos"

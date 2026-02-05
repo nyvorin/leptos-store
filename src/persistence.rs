@@ -128,7 +128,7 @@ impl fmt::Display for StorageType {
 // ============================================================================
 
 /// Future type for async persistence operations.
-/// 
+///
 /// On native targets, this requires `Send` for thread safety.
 /// On WASM, `Send` is not required (single-threaded environment).
 #[cfg(not(target_arch = "wasm32"))]

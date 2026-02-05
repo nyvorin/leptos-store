@@ -11,7 +11,9 @@ use leptos_router::{
 };
 
 #[cfg(any(feature = "hydrate", feature = "ssr"))]
-use leptos_store::templates::feature_flags::{Feature, FeatureFlag, FeatureFlagStore, FeatureVariant};
+use leptos_store::templates::feature_flags::{
+    Feature, FeatureFlag, FeatureFlagStore, FeatureVariant,
+};
 
 /// Main app component
 #[component]
@@ -125,7 +127,8 @@ fn FlagControls() -> impl IntoView {
                         }}
                     </div>
                 </div>
-            }.into_any();
+            }
+            .into_any();
         }
     }
 
@@ -133,7 +136,8 @@ fn FlagControls() -> impl IntoView {
         <div class="flag-controls">
             <p>"Feature flags require the 'templates' feature"</p>
         </div>
-    }.into_any()
+    }
+    .into_any()
 }
 
 /// Hero section with variants
@@ -173,7 +177,8 @@ fn HeroSection() -> impl IntoView {
                     </FeatureVariant>
                 </div>
             </section>
-        }.into_any();
+        }
+        .into_any();
     }
 
     #[cfg(not(any(feature = "hydrate", feature = "ssr")))]
@@ -181,7 +186,8 @@ fn HeroSection() -> impl IntoView {
         <section class="hero-section">
             <p>"Requires 'templates' feature"</p>
         </section>
-    }.into_any()
+    }
+    .into_any()
 }
 
 /// Beta features section
@@ -212,7 +218,8 @@ fn BetaFeatures() -> impl IntoView {
                     </div>
                 </Feature>
             </section>
-        }.into_any();
+        }
+        .into_any();
     }
 
     #[cfg(not(any(feature = "hydrate", feature = "ssr")))]
@@ -220,7 +227,8 @@ fn BetaFeatures() -> impl IntoView {
         <section class="beta-section">
             <p>"Requires 'templates' feature"</p>
         </section>
-    }.into_any()
+    }
+    .into_any()
 }
 
 /// Premium content section
@@ -248,7 +256,8 @@ fn PremiumContent() -> impl IntoView {
                     </div>
                 </Feature>
             </section>
-        }.into_any();
+        }
+        .into_any();
     }
 
     #[cfg(not(any(feature = "hydrate", feature = "ssr")))]
@@ -256,5 +265,6 @@ fn PremiumContent() -> impl IntoView {
         <section class="premium-section">
             <p>"Requires 'templates' feature"</p>
         </section>
-    }.into_any()
+    }
+    .into_any()
 }
