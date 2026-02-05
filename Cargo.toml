@@ -73,4 +73,5 @@ members = [
     "examples/composition-example",
     "examples/feature-flags-example",
     "examples/devtools-example",
+    "examples/showcase",
 ]
