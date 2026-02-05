@@ -1307,6 +1307,92 @@ macro_rules! selector {
 }
 
 // ============================================================================
+// Namespace Macro
+// ============================================================================
+
+/// Define a typed namespace that aggregates multiple domain stores.
+///
+/// Generates a struct with typed accessors for each store, plus
+/// `provide_<snake_case>()` and `use_<snake_case>()` context helper functions.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use leptos_store::prelude::*;
+///
+/// namespace! {
+///     pub AppStores {
+///         user: UserStore,
+///         products: ProductStore,
+///         cart: CartStore,
+///     }
+/// }
+///
+/// // Create and provide:
+/// let stores = AppStores::new(
+///     UserStore::new(),
+///     ProductStore::new(),
+///     CartStore::new(),
+/// );
+/// provide_app_stores(stores);
+///
+/// // Consume in components:
+/// let stores = use_app_stores();
+/// let user = stores.user();
+/// ```
+#[macro_export]
+macro_rules! namespace {
+    (
+        $ns_vis:vis $ns_name:ident {
+            $( $store_field:ident : $store_ty:ty ),+ $(,)?
+        }
+    ) => {
+        #[derive(Clone)]
+        $ns_vis struct $ns_name {
+            $( $store_field: $store_ty, )+
+        }
+
+        impl $ns_name {
+            /// Create a new namespace with all stores.
+            pub fn new( $( $store_field: $store_ty ),+ ) -> Self {
+                Self { $( $store_field ),+ }
+            }
+
+            $(
+                /// Access the store.
+                pub fn $store_field(&self) -> &$store_ty {
+                    &self.$store_field
+                }
+            )+
+
+            /// Get the number of stores in this namespace.
+            pub fn store_count(&self) -> usize {
+                $crate::namespace!(@count $( $store_field )+)
+            }
+        }
+
+        ::paste::paste! {
+            /// Provide this namespace into the Leptos context tree.
+            $ns_vis fn [<provide_ $ns_name:snake>](stores: $ns_name) {
+                ::leptos::prelude::provide_context(stores);
+            }
+
+            /// Retrieve this namespace from the Leptos context tree.
+            $ns_vis fn [<use_ $ns_name:snake>]() -> $ns_name {
+                ::leptos::prelude::use_context::<$ns_name>()
+                    .expect(concat!(stringify!($ns_name), " not found in context. Did you call provide_", stringify!([<$ns_name:snake>]), "()?"))
+            }
+        }
+    };
+
+    // Count helper
+    (@count $first:ident $( $rest:ident )*) => {
+        1 + $crate::namespace!(@count $( $rest )*)
+    };
+    (@count) => { 0 };
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 
@@ -1458,5 +1544,59 @@ mod tests {
         let custom_state = CustomState { count: 100 };
         let store = CustomStore::with_state(custom_state);
         assert_eq!(store.state.get().count, 100);
+    }
+
+    #[test]
+    fn test_namespace_macro() {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        rt.block_on(async {
+            let owner = Owner::new();
+            owner.with(|| {
+                use crate::store::Store;
+
+                // Define two stores
+                store! {
+                    pub NsStoreA {
+                        state NsStateA {
+                            value_a: i32 = 10,
+                        }
+                        getters {}
+                        mutators {}
+                        actions {}
+                    }
+                }
+
+                store! {
+                    pub NsStoreB {
+                        state NsStateB {
+                            value_b: String = String::new(),
+                        }
+                        getters {}
+                        mutators {}
+                        actions {}
+                    }
+                }
+
+                namespace! {
+                    pub TestNamespace {
+                        alpha: NsStoreA,
+                        beta: NsStoreB,
+                    }
+                }
+
+                let ns = TestNamespace::new(NsStoreA::new(), NsStoreB::new());
+                // Test accessor methods
+                let _alpha: &NsStoreA = ns.alpha();
+                let _beta: &NsStoreB = ns.beta();
+                // Test store count
+                assert_eq!(ns.store_count(), 2);
+                // Test accessor reads state correctly via Store trait
+                use leptos::prelude::With;
+                assert_eq!(ns.alpha().state().with(|s| s.value_a), 10);
+            });
+        });
     }
 }
