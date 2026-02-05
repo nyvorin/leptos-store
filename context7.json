@@ -1,5 +1,7 @@
 {
   "$schema": "https://context7.com/schema/context7.json",
+  "url": "https://context7.com/web-mech/leptos-store",
+  "public_key": "pk_SK5YXtYE4WJ4vylhBGgk0",
   "projectTitle": "leptos-store",
   "description": "Enterprise-grade, type-enforced state management for Leptos (Rust). Structured SSR-safe architecture inspired by Vuex/Pinia with stores, getters, mutators, actions, hydration, middleware, persistence, composition, and devtools.",
   "folders": [],
