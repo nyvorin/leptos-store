@@ -75,4 +75,6 @@ members = [
     "examples/feature-flags-example",
     "examples/devtools-example",
     "examples/showcase",
+    "examples/csr-example",
+    "examples/selectors-example",
 ]

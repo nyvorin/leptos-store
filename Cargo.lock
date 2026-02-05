@@ -714,6 +714,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "csr-example"
+version = "0.1.0"
+dependencies = [
+ "actix-files",
+ "actix-web",
+ "console_error_panic_hook",
+ "leptos",
+ "leptos-store",
+ "leptos_actix",
+ "leptos_meta",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
+]
+
+[[package]]
 name = "dashmap"
 version = "6.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1595,6 +1611,7 @@ dependencies = [
  "futures",
  "js-sys",
  "leptos",
+ "paste",
  "pin-project-lite",
  "serde",
  "serde_json",
@@ -2649,6 +2666,23 @@ checksum = "cc1f0cbffaac4852523ce30d8bd3c5cdc873501d96ff467ca09b6767bb8cd5c0"
 dependencies = [
  "core-foundation-sys",
  "libc",
+]
+
+[[package]]
+name = "selectors-example"
+version = "0.1.0"
+dependencies = [
+ "actix-files",
+ "actix-web",
+ "console_error_panic_hook",
+ "leptos",
+ "leptos-store",
+ "leptos_actix",
+ "leptos_meta",
+ "leptos_router",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
 ]
 
 [[package]]
