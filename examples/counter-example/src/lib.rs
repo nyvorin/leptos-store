@@ -18,7 +18,7 @@ pub use components::*;
 pub use counter_store::*;
 
 /// Hydration entry point - called on the client to hydrate the SSR HTML
-#[cfg(feature = "hydrate")]
+#[cfg(all(feature = "hydrate", feature = "wasm_entry"))]
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub fn hydrate() {
     console_error_panic_hook::set_once();
@@ -26,7 +26,7 @@ pub fn hydrate() {
 }
 
 /// CSR entry point - mounts the app directly (no SSR)
-#[cfg(feature = "csr")]
+#[cfg(all(feature = "csr", feature = "wasm_entry"))]
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
 pub fn main() {
     console_error_panic_hook::set_once();
