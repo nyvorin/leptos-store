@@ -383,8 +383,13 @@ trail.record_with_diff("add_item", &before, &after);
 | Audit trail growing unbounded | Set `.with_max_entries(n)` — default is 1000 |
 | `derive_state_diff!` not available | Requires `middleware` feature gate |
 
+## Cache Invalidation
+
+For cross-store cache invalidation patterns — including `CacheInvalidated` events, `StoreDependencyGraph`, `invalidate_on_change()`, and the relationship between reactive memos and explicit coordination — see [10-cache-invalidation.md](10-cache-invalidation.md).
+
 ## Related Skills
 
 - [01-creating-a-store.md](01-creating-a-store.md) — Store definition (middleware wraps stores)
 - [07-store-composition.md](07-store-composition.md) — RootStore for multi-store architecture
+- [10-cache-invalidation.md](10-cache-invalidation.md) — Cross-store cache invalidation patterns
 - [troubleshooting.md](troubleshooting.md) — Common middleware issues

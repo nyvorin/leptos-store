@@ -263,8 +263,14 @@ impl fmt::Debug for RootStore {
 // ============================================================================
 
 /// Builder for constructing root stores.
+///
+/// Stores can optionally declare initialization ordering constraints
+/// via [`with_store_after`](Self::with_store_after). This records which
+/// store should be initialized after another, enabling correct hydration
+/// ordering for dependent stores.
 pub struct RootStoreBuilder {
     stores: HashMap<TypeId, Arc<dyn AnyStore>>,
+    initialization_order: Vec<TypeId>,
 }
 
 impl Default for RootStoreBuilder {
@@ -278,6 +284,7 @@ impl RootStoreBuilder {
     pub fn new() -> Self {
         Self {
             stores: HashMap::new(),
+            initialization_order: Vec::new(),
         }
     }
 
@@ -287,10 +294,76 @@ impl RootStoreBuilder {
         self
     }
 
+    /// Add a store and record that it should initialize **after** `Dep`.
+    ///
+    /// This is an ordering hint for hydration: stores declared with
+    /// `with_store_after` should be hydrated after their dependency.
+    /// The builder records the constraint but does not enforce ordering
+    /// at runtime — component render order controls actual hydration
+    /// timing in Leptos.
+    ///
+    /// Query the declared order with [`initialization_order()`](Self::initialization_order).
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use leptos::prelude::{RwSignal, ReadSignal};
+    /// # use leptos_store::store::Store;
+    /// # use leptos_store::composition::RootStore;
+    /// # #[derive(Clone, Debug, Default)]
+    /// # struct AuthState;
+    /// # #[derive(Clone)]
+    /// # struct AuthStore { state: RwSignal<AuthState> }
+    /// # impl AuthStore { fn new() -> Self { Self { state: RwSignal::new(AuthState) } } }
+    /// # impl Store for AuthStore {
+    /// #     type State = AuthState;
+    /// #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+    /// # }
+    /// # #[derive(Clone, Debug, Default)]
+    /// # struct CartState;
+    /// # #[derive(Clone)]
+    /// # struct CartStore { state: RwSignal<CartState> }
+    /// # impl CartStore { fn new() -> Self { Self { state: RwSignal::new(CartState) } } }
+    /// # impl Store for CartStore {
+    /// #     type State = CartState;
+    /// #     fn state(&self) -> ReadSignal<Self::State> { self.state.read_only() }
+    /// # }
+    /// let root = RootStore::builder()
+    ///     .with_store(AuthStore::new())
+    ///     .with_store_after::<_, AuthStore>(CartStore::new())  // cart after auth
+    ///     .build();
+    /// ```
+    pub fn with_store_after<S: Store + 'static, Dep: Store + 'static>(mut self, store: S) -> Self {
+        let store_type = TypeId::of::<S>();
+        let dep_type = TypeId::of::<Dep>();
+
+        self.stores.insert(store_type, Arc::new(store));
+
+        // Record ordering: dep should come before store
+        // Ensure dep is in the order list first
+        if !self.initialization_order.contains(&dep_type) {
+            self.initialization_order.push(dep_type);
+        }
+        if !self.initialization_order.contains(&store_type) {
+            self.initialization_order.push(store_type);
+        }
+
+        self
+    }
+
     /// Add a store wrapped in Arc.
     pub fn with_arc_store<S: Store + 'static>(mut self, store: Arc<S>) -> Self {
         self.stores.insert(TypeId::of::<S>(), store);
         self
+    }
+
+    /// Get the declared initialization order.
+    ///
+    /// Returns `TypeId`s in the order they should be initialized
+    /// (dependencies first). Only includes stores added via
+    /// [`with_store_after`](Self::with_store_after).
+    pub fn initialization_order(&self) -> &[TypeId] {
+        &self.initialization_order
     }
 
     /// Build the root store.
@@ -848,5 +921,48 @@ mod tests {
         let (is_auth, count) = selector.get();
         assert!(!is_auth);
         assert_eq!(count, 0);
+    }
+
+    #[test]
+    fn test_with_store_after() {
+        let root = RootStore::builder()
+            .with_store(AuthStore::new())
+            .with_store_after::<_, AuthStore>(CartStore::new())
+            .build();
+
+        assert!(root.contains::<AuthStore>());
+        assert!(root.contains::<CartStore>());
+        assert_eq!(root.len(), 2);
+    }
+
+    #[test]
+    fn test_initialization_order() {
+        let builder = RootStore::builder()
+            .with_store(AuthStore::new())
+            .with_store_after::<_, AuthStore>(CartStore::new());
+
+        let order = builder.initialization_order();
+        assert_eq!(order.len(), 2);
+
+        // AuthStore should come before CartStore
+        let auth_pos = order
+            .iter()
+            .position(|t| *t == TypeId::of::<AuthStore>())
+            .unwrap();
+        let cart_pos = order
+            .iter()
+            .position(|t| *t == TypeId::of::<CartStore>())
+            .unwrap();
+        assert!(auth_pos < cart_pos);
+    }
+
+    #[test]
+    fn test_initialization_order_empty_without_after() {
+        let builder = RootStore::builder()
+            .with_store(AuthStore::new())
+            .with_store(CartStore::new());
+
+        // No ordering constraints declared
+        assert!(builder.initialization_order().is_empty());
     }
 }

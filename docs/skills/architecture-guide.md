@@ -27,6 +27,7 @@ What's the app scope?
 What does your app need?
 ├── Client-only SPA (no server rendering)
 │   → features = ["csr"]
+│   → See: 09-csr-deployment.md
 │
 ├── Server-rendered + interactive
 │   → features = ["ssr", "hydrate"]
@@ -109,6 +110,11 @@ What does the store need to do?
 │   → Add middleware coordination via EventBus
 │   → See: 08-middleware.md
 │
+├── Cross-store cache invalidation / dependency ordering
+│   → MultiStoreSelector for reactive invalidation
+│   → StoreDependencyGraph for explicit dependencies
+│   → See: 10-cache-invalidation.md
+│
 └── State history / undo / audit
     → Add AuditTrail with StateDiff
     → See: 08-middleware.md
@@ -154,6 +160,8 @@ What does the store need to do?
 6. [06-selectors.md](06-selectors.md) — Fine-grained Memo-based reactivity
 7. [07-store-composition.md](07-store-composition.md) — RootStore, CompositeStore patterns
 8. [08-middleware.md](08-middleware.md) — Audit trails, event bus, coordination
+9. [09-csr-deployment.md](09-csr-deployment.md) — Client-only SPA deployment with trunk
+10. [10-cache-invalidation.md](10-cache-invalidation.md) — Cross-store reactive cache invalidation
 
 ### Diagnostics
 - [troubleshooting.md](troubleshooting.md) — All common errors indexed by symptom

@@ -88,7 +88,7 @@ pub use crate::audit::{
 
 #[cfg(feature = "middleware")]
 #[cfg_attr(docsrs, doc(cfg(feature = "middleware")))]
-pub use crate::coordination::StoreCoordinator;
+pub use crate::coordination::{CoordinationError, StoreCoordinator, StoreDependencyGraph};
 
 // Devtools support (when feature is enabled)
 #[cfg(feature = "devtools")]

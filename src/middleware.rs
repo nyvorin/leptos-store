@@ -680,6 +680,21 @@ pub enum StoreEvent {
         /// Source of the error.
         source: ErrorSource,
     },
+
+    /// A cache invalidation was triggered.
+    ///
+    /// Emitted by [`StoreCoordinator::invalidate_on_change`](crate::coordination::StoreCoordinator::invalidate_on_change)
+    /// when a source store mutates, signaling that dependent caches or
+    /// derived data should be refreshed.
+    CacheInvalidated {
+        /// The store that triggered the invalidation.
+        source_store_id: StoreId,
+        /// Optional scope label to narrow which caches to invalidate
+        /// (e.g. `"pricing"`, `"inventory"`). `None` means all caches.
+        scope: Option<&'static str>,
+        /// Timestamp in milliseconds since epoch.
+        timestamp: u64,
+    },
 }
 
 /// Source of an error event.
@@ -693,6 +708,8 @@ pub enum ErrorSource {
     Middleware,
     /// Error occurred during persistence.
     Persistence,
+    /// Error occurred during cache invalidation.
+    Invalidation,
     /// Unknown or other source.
     Unknown,
 }
