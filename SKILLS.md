@@ -3,7 +3,7 @@ name: leptos-store
 description: Enterprise-grade, type-enforced state management for Leptos (Rust). Use when implementing stores, getters, mutators, actions, selectors, persistence, SSR hydration, middleware, audit trails, or store composition in a Leptos application.
 metadata:
   author: web-mech
-  version: "0.6.2"
+  version: "0.7"
   framework: leptos
   language: rust
 ---
@@ -16,7 +16,7 @@ State management for Leptos with enforced Enterprise Mode: getters (public read)
 
 - Leptos 0.8+
 - Rust 1.92+ (2024 edition)
-- leptos-store 0.6.2
+- leptos-store 0.7
 
 ## Critical Rules
 
@@ -102,16 +102,16 @@ tracing ────→ middleware ──→ js-sys
 
 ```toml
 # Client-only SPA
-leptos-store = { version = "0.6", features = ["csr"] }
+leptos-store = { version = "0.7", features = ["csr"] }
 
 # Standard SSR app
-leptos-store = { version = "0.6", features = ["ssr", "hydrate"] }
+leptos-store = { version = "0.7", features = ["ssr", "hydrate"] }
 
 # With persistence
-leptos-store = { version = "0.6", features = ["ssr", "hydrate", "persist-web"] }
+leptos-store = { version = "0.7", features = ["ssr", "hydrate", "persist-web"] }
 
 # Enterprise (full stack)
-leptos-store = { version = "0.6", features = ["full"] }
+leptos-store = { version = "0.7", features = ["full"] }
 ```
 
 ## Decision Guide
