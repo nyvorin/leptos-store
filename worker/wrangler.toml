@@ -1,0 +1,53 @@
+#:schema node_modules/wrangler/config-schema.json
+
+# =============================================================================
+# leptos-store Showcase — Cloudflare Containers
+# =============================================================================
+# Auth: Set CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID env vars
+#       (overrides global wrangler login)
+#
+# Deploy dev:  make deploy-dev
+# Deploy prod: make deploy-prod
+# Local dev:   cd worker && wrangler dev  (requires Docker running)
+# =============================================================================
+
+name = "leptos-store-showcase-dev"
+main = "index.js"
+compatibility_date = "2025-11-14"
+
+# --- Container ---
+[[containers]]
+class_name = "ShowcaseContainer"
+image = "../Dockerfile"
+max_instances = 1
+instance_type = "lite"
+
+# --- Durable Object binding ---
+[[durable_objects.bindings]]
+class_name = "ShowcaseContainer"
+name = "SHOWCASE"
+
+# --- Migrations ---
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ShowcaseContainer"]
+
+# =============================================================================
+# Production environment
+# =============================================================================
+[env.production]
+name = "leptos-store-showcase"
+
+[[env.production.containers]]
+class_name = "ShowcaseContainer"
+image = "../Dockerfile"
+max_instances = 3
+instance_type = "basic"
+
+[[env.production.durable_objects.bindings]]
+class_name = "ShowcaseContainer"
+name = "SHOWCASE"
+
+[[env.production.migrations]]
+tag = "v1"
+new_sqlite_classes = ["ShowcaseContainer"]
