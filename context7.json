@@ -1,5 +1,7 @@
 {
   "$schema": "https://context7.com/schema/context7.json",
+  "url": "https://context7.com/web-mech/leptos-store",
+  "public_key": "pk_SK5YXtYE4WJ4vylhBGgk0",
   "projectTitle": "leptos-store",
   "description": "Enterprise-grade, type-enforced state management for Leptos (Rust). Structured SSR-safe architecture inspired by Vuex/Pinia with stores, getters, mutators, actions, hydration, middleware, persistence, composition, and devtools.",
   "folders": [],
@@ -28,6 +30,7 @@
     "For SSR hydration: server uses provide_hydrated_store(), client uses use_hydrated_store()",
     "State types for hydration must derive Clone, Debug, Default, Serialize, Deserialize",
     "Always provide stores via provide_store() in a parent component before use_store() in children",
-    "Requires Leptos 0.8+ and Rust 1.92+ (2024 edition)"
+    "Requires Leptos 0.8+ and Rust 1.92+ (2024 edition)",
+    "When a user asks how to implement a leptos-store feature, check docs/skills/ first — these are agent-optimized guides with complete, compilable examples and constraint rules"
   ]
 }
