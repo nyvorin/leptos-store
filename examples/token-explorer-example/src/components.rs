@@ -156,10 +156,7 @@ fn TokenExplorerEmbed() -> impl IntoView {
     let (is_refreshing, set_is_refreshing) = signal(false);
 
     // Fetch tokens on mount
-    let tokens_resource = Resource::new(
-        || (),
-        move |_| async move { fetch_tokens().await },
-    );
+    let tokens_resource = Resource::new(|| (), move |_| async move { fetch_tokens().await });
 
     {
         let store = store.clone();
