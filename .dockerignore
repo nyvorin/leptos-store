@@ -1,0 +1,13 @@
+target/
+.git/
+.github/
+.claude/
+docs/
+scripts/
+*.md
+!README.md
+.gitignore
+.dockerignore
+Dockerfile
+*.log
+.DS_Store
