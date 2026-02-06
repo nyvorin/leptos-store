@@ -170,11 +170,7 @@ pub fn App() -> impl IntoView {
 /// Provides a header with back-to-gallery link, title, and CSS scoping
 /// via `.demo-{id}` wrapper div.
 #[component]
-fn ExampleWrapper(
-    title: &'static str,
-    id: &'static str,
-    children: Children,
-) -> impl IntoView {
+fn ExampleWrapper(title: &'static str, id: &'static str, children: Children) -> impl IntoView {
     let store = use_context::<ShowcaseStore>().expect("ShowcaseStore not found");
     store.mark_visited(id);
 
