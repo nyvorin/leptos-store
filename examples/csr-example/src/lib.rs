@@ -98,6 +98,21 @@ pub enum TodoFilter {
     Completed,
 }
 
+/// Embeddable demo component for the showcase.
+///
+/// Sets up the TodoStore and renders the todo UI without the heading.
+#[component]
+pub fn Demo() -> impl IntoView {
+    let store = TodoStore::new();
+    provide_store(store);
+    view! {
+        <TodoInput />
+        <TodoFilters />
+        <TodoList />
+        <TodoFooter />
+    }
+}
+
 /// Main app component. Demonstrates CSR-only store initialization.
 ///
 /// In CSR mode, just create the store and provide it — no server,

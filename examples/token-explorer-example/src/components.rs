@@ -134,6 +134,130 @@ fn format_with_commas(n: u64) -> String {
     chunks.join(",").chars().rev().collect()
 }
 
+/// Embeddable demo component for the showcase.
+///
+/// Sets up the TokenStore and renders an embedded explorer without URL sync.
+#[component]
+pub fn Demo() -> impl IntoView {
+    provide_store(TokenStore::new());
+    view! { <TokenExplorerEmbed /> }
+}
+
+/// Embedded token explorer without URL parameter sync.
+///
+/// Keeps fetch, polling, search, sort, and detail panel functionality
+/// but removes `use_navigate()` / `use_query_map()` dependencies so it
+/// can be mounted inside another router.
+#[component]
+fn TokenExplorerEmbed() -> impl IntoView {
+    let store = use_store::<TokenStore>();
+
+    let (last_updated, set_last_updated) = signal(String::new());
+    let (is_refreshing, set_is_refreshing) = signal(false);
+
+    // Fetch tokens on mount
+    let tokens_resource = Resource::new(
+        || (),
+        move |_| async move { fetch_tokens().await },
+    );
+
+    {
+        let store = store.clone();
+        Effect::new(move |_| {
+            if let Some(Ok(response)) = tokens_resource.get() {
+                store.set_tokens(response.tokens);
+                set_last_updated.set(response.fetched_at);
+                set_is_refreshing.set(false);
+            }
+        });
+    }
+
+    // Client-side polling every 30 seconds
+    #[cfg(feature = "hydrate")]
+    {
+        use wasm_bindgen::JsCast;
+
+        let store = store.clone();
+        let (interval_id, set_interval_id) = signal::<Option<i32>>(None);
+
+        Effect::new(move |_| {
+            let store = store.clone();
+            let window = web_sys::window().expect("no global window");
+
+            let callback = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
+                let store = store.clone();
+                set_is_refreshing.set(true);
+                leptos::task::spawn_local(async move {
+                    match fetch_tokens().await {
+                        Ok(response) => {
+                            store.set_tokens(response.tokens);
+                            set_last_updated.set(response.fetched_at);
+                        }
+                        Err(e) => {
+                            store.set_error(Some(format!("Refresh failed: {}", e)));
+                        }
+                    }
+                    set_is_refreshing.set(false);
+                });
+            }) as Box<dyn Fn()>);
+
+            let id = window
+                .set_interval_with_callback_and_timeout_and_arguments_0(
+                    callback.as_ref().unchecked_ref(),
+                    POLL_INTERVAL_MS as i32,
+                )
+                .expect("failed to set interval");
+
+            set_interval_id.set(Some(id));
+            callback.forget();
+        });
+
+        on_cleanup(move || {
+            if let Some(id) = interval_id.get_untracked() {
+                if let Some(window) = web_sys::window() {
+                    window.clear_interval_with_handle(id);
+                }
+            }
+        });
+    }
+
+    // Manual refresh
+    let refresh_action = leptos::prelude::Action::new(move |_: &()| {
+        let store = store.clone();
+        async move {
+            set_is_refreshing.set(true);
+            match fetch_tokens().await {
+                Ok(response) => {
+                    store.set_tokens(response.tokens);
+                    set_last_updated.set(response.fetched_at);
+                }
+                Err(e) => {
+                    store.set_error(Some(format!("Refresh failed: {e}")));
+                }
+            }
+            set_is_refreshing.set(false);
+        }
+    });
+
+    // No-op URL updater (embedded mode doesn't sync to URL)
+    let noop_url = move |_search: String, _sort: SortField, _desc: bool| {};
+
+    view! {
+        <div class="token-explorer">
+            <Header
+                last_updated=last_updated
+                is_refreshing=is_refreshing
+                on_refresh=move |_| { let _ = refresh_action.dispatch(()); }
+            />
+            <SearchAndFilter update_url=noop_url initial_search=String::new() />
+            <Suspense fallback=move || view! { <LoadingState /> }>
+                <TokenGrid />
+            </Suspense>
+            <TokenDetail />
+        </div>
+    }
+}
+
 /// Main application shell
 #[component]
 pub fn App() -> impl IntoView {

@@ -27,6 +27,16 @@ use leptos_store::prelude::*;
 
 use crate::auth_store::{AuthStore, LoginCredentials};
 
+/// Embeddable demo component for the showcase.
+///
+/// Creates a fresh (unauthenticated) store without hydration script reading.
+#[component]
+pub fn Demo() -> impl IntoView {
+    let store = AuthStore::new();
+    provide_store(store);
+    view! { <AuthRouter /> }
+}
+
 /// Shell component that wraps the entire application.
 ///
 /// Provides meta context and routing for SSR support.

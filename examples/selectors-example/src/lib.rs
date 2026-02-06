@@ -91,6 +91,16 @@ store! {
 // App component
 // ============================================================================
 
+/// Embeddable demo component for the showcase.
+///
+/// Sets up the DashboardStore and renders the dashboard with selector panels.
+#[component]
+pub fn Demo() -> impl IntoView {
+    let store = DashboardStore::new();
+    provide_store(store);
+    view! { <DashboardPage /> }
+}
+
 /// Main app component
 #[component]
 pub fn App() -> impl IntoView {

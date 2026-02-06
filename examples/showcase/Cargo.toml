@@ -30,6 +30,18 @@ wasm-bindgen = { version = "=0.2.108", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 web-sys = { version = "0.3", features = ["Window"], optional = true }
 
+# Example crate dependencies (as libraries)
+counter-example = { path = "../counter-example", default-features = false }
+auth-store-example = { path = "../auth-store-example", default-features = false }
+token-explorer-example = { path = "../token-explorer-example", default-features = false }
+middleware-example = { path = "../middleware-example", default-features = false }
+persistence-example = { path = "../persistence-example", default-features = false }
+composition-example = { path = "../composition-example", default-features = false }
+feature-flags-example = { path = "../feature-flags-example", default-features = false }
+devtools-example = { path = "../devtools-example", default-features = false }
+csr-example = { path = "../csr-example", default-features = false }
+selectors-example = { path = "../selectors-example", default-features = false }
+
 [features]
 default = []
 ssr = [
@@ -41,6 +53,21 @@ ssr = [
     "leptos_meta/ssr",
     "leptos_router/ssr",
     "leptos-store/ssr",
+    "leptos-store/middleware",
+    "leptos-store/devtools",
+    "leptos-store/templates",
+    "leptos-store/persist-web",
+    # Propagate ssr to all example crates
+    "counter-example/ssr",
+    "auth-store-example/ssr",
+    "token-explorer-example/ssr",
+    "middleware-example/ssr",
+    "persistence-example/ssr",
+    "composition-example/ssr",
+    "feature-flags-example/ssr",
+    "devtools-example/ssr",
+    "csr-example/ssr",
+    "selectors-example/ssr",
 ]
 hydrate = [
     "dep:wasm-bindgen",
@@ -48,6 +75,21 @@ hydrate = [
     "dep:web-sys",
     "leptos/hydrate",
     "leptos-store/hydrate",
+    "leptos-store/middleware",
+    "leptos-store/devtools",
+    "leptos-store/templates",
+    "leptos-store/persist-web",
+    # Propagate hydrate to all example crates
+    "counter-example/hydrate",
+    "auth-store-example/hydrate",
+    "token-explorer-example/hydrate",
+    "middleware-example/hydrate",
+    "persistence-example/hydrate",
+    "composition-example/hydrate",
+    "feature-flags-example/hydrate",
+    "devtools-example/hydrate",
+    "csr-example/hydrate",
+    "selectors-example/hydrate",
 ]
 
 [dev-dependencies]

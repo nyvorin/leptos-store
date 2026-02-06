@@ -16,6 +16,53 @@ use crate::notes_store::NotesStore;
 #[cfg(feature = "hydrate")]
 use leptos::task::spawn_local;
 
+/// Embeddable demo component for the showcase.
+///
+/// Sets up PersistentStore with a different key prefix to avoid conflicts.
+#[component]
+pub fn Demo() -> impl IntoView {
+    let store = NotesStore::new();
+
+    #[cfg(feature = "hydrate")]
+    let persistent_store = {
+        let adapter = LocalStorageAdapter::new();
+        let ps = PersistentStore::new(store.clone(), adapter)
+            .with_key("notes_store")
+            .with_key_prefix("showcase_persistence")
+            .with_version(1);
+
+        let ps_load = ps.clone();
+        let store_load = store.clone();
+        Effect::new(move |_| {
+            let ps = ps_load.clone();
+            let store = store_load.clone();
+            spawn_local(async move {
+                if let Ok(Some(state)) = ps.load().await {
+                    store.load_state(state);
+                }
+            });
+        });
+
+        let ps_save = ps.clone();
+        let store_save = store.clone();
+        Effect::new(move |_| {
+            let _state = store_save.get_state();
+            let ps = ps_save.clone();
+            spawn_local(async move {
+                let _ = ps.save().await;
+            });
+        });
+
+        ps
+    };
+
+    #[cfg(feature = "hydrate")]
+    provide_context(persistent_store);
+
+    provide_store(store);
+    view! { <NotesPage /> }
+}
+
 /// Main app component
 #[component]
 pub fn App() -> impl IntoView {

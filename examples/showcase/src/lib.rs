@@ -6,6 +6,7 @@
 //! A unified showcase for all leptos-store examples.
 
 pub mod components;
+pub mod demos;
 pub mod showcase_store;
 
 #[cfg(feature = "hydrate")]

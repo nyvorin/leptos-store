@@ -19,6 +19,25 @@ use leptos_store::middleware::{LoggingMiddleware, MiddlewareStore, TimingMiddlew
 
 use crate::task_store::{TaskFilter, TaskStore};
 
+/// Embeddable demo component for the showcase.
+///
+/// Wraps the TaskStore in MiddlewareStore with logging/timing middleware.
+#[component]
+pub fn Demo() -> impl IntoView {
+    let store = TaskStore::new();
+
+    #[cfg(any(feature = "hydrate", feature = "ssr"))]
+    {
+        let middleware_store = MiddlewareStore::new(store.clone());
+        middleware_store.add_middleware(LoggingMiddleware::new());
+        middleware_store.add_middleware(TimingMiddleware::new());
+        provide_context(middleware_store);
+    }
+
+    provide_store(store);
+    view! { <TaskPage /> }
+}
+
 /// Main app component
 #[component]
 pub fn App() -> impl IntoView {
