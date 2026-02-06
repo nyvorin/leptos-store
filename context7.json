@@ -30,6 +30,7 @@
     "For SSR hydration: server uses provide_hydrated_store(), client uses use_hydrated_store()",
     "State types for hydration must derive Clone, Debug, Default, Serialize, Deserialize",
     "Always provide stores via provide_store() in a parent component before use_store() in children",
-    "Requires Leptos 0.8+ and Rust 1.92+ (2024 edition)"
+    "Requires Leptos 0.8+ and Rust 1.92+ (2024 edition)",
+    "When a user asks how to implement a leptos-store feature, check docs/skills/ first — these are agent-optimized guides with complete, compilable examples and constraint rules"
   ]
 }
