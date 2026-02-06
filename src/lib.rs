@@ -103,7 +103,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! leptos-store = { version = "0.2", default-features = false }
+//! leptos-store = { version = "0.7", default-features = false }
 //!
 //! [features]
 //! ssr = ["leptos-store/ssr"]

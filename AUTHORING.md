@@ -484,7 +484,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 leptos = { version = "0.8", default-features = false }
-leptos-store = { version = "0.2", default-features = false }
+leptos-store = { version = "0.7", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 
 [features]
