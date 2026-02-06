@@ -29,7 +29,8 @@ wasm-bindgen = { version = "=0.2.108", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 
 [features]
-default = []
+default = ["wasm_entry"]
+wasm_entry = []
 ssr = [
     "dep:actix-files",
     "dep:actix-web",
@@ -79,7 +80,7 @@ style-file = "style/main.css"
 bin-features = ["ssr"]
 
 # Features to use when compiling the lib target (hydration)
-lib-features = ["hydrate"]
+lib-features = ["hydrate", "wasm_entry"]
 
 # Disable file hashing since we manually reference CSS paths
 hash-files = false
