@@ -1,5 +1,7 @@
 # SSR Hydration
 
+> **Building a CSR app instead?** See [09-csr-deployment.md](09-csr-deployment.md) — CSR apps don't need hydration.
+
 ## When to Use
 You're building an SSR app with Leptos and need store state to transfer from server to client without hydration mismatches.
 
@@ -246,8 +248,23 @@ Server                              Client
 - Duplicate `store_key()` values across different stores
 - State fields that aren't serializable (e.g., `RwSignal` inside state)
 
+## Hydration Ordering for Dependent Stores
+
+When stores depend on each other, hydration order matters. A store should not read from a dependency that hasn't been hydrated yet. Use `RootStoreBuilder::with_store_after()` to declare ordering constraints, and structure your component tree so parent stores render before child stores:
+
+```rust
+let root = RootStore::builder()
+    .with_store(AuthStore::new())
+    .with_store_after::<_, AuthStore>(CartStore::new())      // cart after auth
+    .with_store_after::<_, CartStore>(TotalsStore::new())    // totals after cart
+    .build();
+```
+
+For dependency validation, use `StoreDependencyGraph::topological_order()` (requires `middleware` feature) as a guide for component tree structure. See [10-cache-invalidation.md](10-cache-invalidation.md) § Hydration Consistency for the full pattern.
+
 ## Related Skills
 - [01-creating-a-store.md](01-creating-a-store.md) — Base store creation
 - [04-persistence.md](04-persistence.md) — Client-side persistence (different from hydration)
 - [02-feature-flags.md](02-feature-flags.md) — FeatureFlagStore has built-in hydration support
 - [architecture-guide.md](architecture-guide.md) — Choosing between CSR, SSR, and hydrate features
+- [10-cache-invalidation.md](10-cache-invalidation.md) — Hydration ordering, dependency graphs, cross-store coordination

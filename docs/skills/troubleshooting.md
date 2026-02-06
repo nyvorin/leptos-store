@@ -244,6 +244,98 @@ store.increment();
 
 ---
 
+## CSR Issues
+
+### 13. `mount_csr_store` vs `provide_store` — which to use?
+
+**Answer:** They are functionally identical. `mount_csr_store()` exists for semantic clarity in CSR apps. Use `mount_csr_store()` in CSR apps, `provide_store()` in SSR apps, and `provide_hydrated_store()` in hydrate apps.
+
+See [09-csr-deployment.md](09-csr-deployment.md) for complete CSR patterns.
+
+---
+
+### 14. CSR app not working — blank page
+
+**Cause:** Usually a build tool issue or wrong feature flag.
+
+**Fix checklist:**
+1. Ensure `features = ["csr"]` in Cargo.toml (not `ssr`, not `hydrate`)
+2. Install trunk: `cargo install trunk`
+3. Create `index.html` with `<link data-trunk rel="rust" />`
+4. Run `trunk serve` (not `cargo run`)
+5. Add `console_error_panic_hook::set_once()` in `main()` to see WASM errors
+6. Check browser console (F12) for errors
+
+---
+
+### 15. CSR state lost on page refresh
+
+**Cause:** CSR state lives in WASM memory — every page refresh starts fresh from defaults.
+
+**Fix:** Add persistence:
+```toml
+leptos-store = { version = "0.5", features = ["csr", "persist-web"] }
+```
+
+Then wrap your store with `PersistentStore` + `LocalStorageAdapter`. See [09-csr-deployment.md](09-csr-deployment.md) § CSR + Persistence and [04-persistence.md](04-persistence.md) for details.
+
+---
+
+## Coordination Issues
+
+### 16. StoreCoordinator not receiving events
+
+**Cause:** EventBus not shared between `MiddlewareStore` and `StoreCoordinator`, or `coord.activate()` not called.
+
+**Fix checklist:**
+1. Use `Arc::new(EventBus::new())` and pass `Arc::clone(&bus)` to both `MiddlewareStore::with_event_bus()` and `StoreCoordinator::with_event_bus()`
+2. Call `coord.activate()` after registering all rules — rules are inert until activated
+3. Use named mutations via `mw_store.mutate("name", || ...)` — direct store method calls bypass middleware
+
+**Prevention:** Always share one `Arc<EventBus>` across all participants. Always call `activate()`.
+
+---
+
+### 17. Circular dependency detected at runtime
+
+**Cause:** Store A depends on Store B, which depends on Store A (directly or transitively).
+
+**Fix:**
+```rust
+use leptos_store::coordination::StoreDependencyGraph;
+
+let mut graph = StoreDependencyGraph::new();
+graph.depends_on(&cart_store, &auth_store);
+graph.depends_on(&totals_store, &cart_store);
+
+// Validate at startup — catches cycles before they cause problems
+match graph.validate() {
+    Ok(()) => { /* acyclic */ }
+    Err(e) => panic!("Dependency error: {e}"),
+}
+```
+
+**Prevention:** Use `StoreDependencyGraph::validate()` at app startup. See [10-cache-invalidation.md](10-cache-invalidation.md) § Dependency Graph.
+
+---
+
+### 18. Cross-store derived data not updating
+
+**Cause:** Using manual coordination when reactive primitives would work better.
+
+**Fix:** For purely derived data (no side effects), use `MultiStoreSelector` or `DerivedView` — they auto-recompute via `Memo<T>`:
+```rust
+let dashboard = MultiStoreSelector::from_two(
+    &cart_store, &pricing_store,
+    |cart, pricing| compute_totals(cart, pricing),
+);
+// Auto-updates when either store changes — no manual invalidation needed
+```
+
+Only use `StoreCoordinator` for side effects (API refetches, external cache clearing). See [10-cache-invalidation.md](10-cache-invalidation.md).
+
+---
+
 ## Quick Feature Gate Reference
 
 ```toml

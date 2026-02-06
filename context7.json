@@ -1,4 +1,7 @@
 {
   "url": "https://context7.com/web-mech/leptos-store",
-  "public_key": "pk_SK5YXtYE4WJ4vylhBGgk0"
+  "public_key": "pk_SK5YXtYE4WJ4vylhBGgk0",
+  "rules": [
+    "MultiStoreSelector and DerivedView provide automatic cross-store cache invalidation via Memo<T> — mutations in source stores trigger recomputation in dependent selectors without manual coordination"
+  ]
 }

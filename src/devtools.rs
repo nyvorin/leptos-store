@@ -662,6 +662,21 @@ impl EventSubscriber for DevtoolsEventSubscriber {
                 payload: format!(r#"{{"message":"{}","source":"{:?}"}}"#, message, source),
                 timestamp: current_timestamp_ms(),
             },
+            StoreEvent::CacheInvalidated {
+                source_store_id: _,
+                scope,
+                timestamp,
+            } => DevtoolsEvent {
+                event_type: "CacheInvalidated".to_string(),
+                store_name: scope.map(|s| s.to_string()),
+                payload: format!(
+                    r#"{{"scope":{}}}"#,
+                    scope
+                        .map(|s| format!(r#""{}""#, s))
+                        .unwrap_or_else(|| "null".to_string())
+                ),
+                timestamp: *timestamp,
+            },
         };
 
         record_event(devtools_event);

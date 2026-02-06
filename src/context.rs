@@ -185,10 +185,25 @@ pub fn try_use_store<S: Store + Clone + Send + Sync + 'static>() -> Result<S, St
 /// This is the simplest way to set up a store — no server serialization,
 /// no hydration, just provide the store into the Leptos context tree.
 ///
+/// `mount_csr_store()` and [`provide_store()`] are functionally identical —
+/// `mount_csr_store` exists for semantic clarity so your code communicates
+/// "this is a CSR app" at the call site.
+///
 /// # When to Use
 ///
 /// Use this for single-page applications (SPAs) built with `trunk` or similar
 /// tools where there is no server-side rendering.
+///
+/// # State Initialization
+///
+/// CSR apps create state with `Store::new()` (or equivalent constructor) —
+/// no serde needed. Compare with SSR+Hydrate which uses
+/// `from_hydrated_state()` and requires `Serialize + Deserialize` on the
+/// state type.
+///
+/// CSR state always starts from defaults on every page load. To restore
+/// state across page reloads, combine with the `persist-web` feature
+/// (see the CSR + Persistence example below).
 ///
 /// # Example
 ///
@@ -204,13 +219,41 @@ pub fn try_use_store<S: Store + Clone + Send + Sync + 'static>() -> Result<S, St
 /// }
 /// ```
 ///
+/// # CSR + Persistence Example
+///
+/// The most common CSR companion pattern — restore state across page reloads:
+///
+/// ```rust,ignore
+/// use leptos::prelude::*;
+/// use leptos_store::prelude::*;
+///
+/// #[component]
+/// fn App() -> impl IntoView {
+///     // 1. Create store from defaults
+///     let store = MyStore::new();
+///
+///     // 2. Wrap with persistence (requires persist-web feature)
+///     let persistent = PersistentStore::new(store)
+///         .with_adapter(LocalStorageAdapter::new())
+///         .with_key("my-app-state");
+///
+///     // 3. Load any previously saved state
+///     persistent.load();
+///
+///     // 4. Provide to the component tree
+///     mount_csr_store(persistent);
+///
+///     view! { <MainContent /> }
+/// }
+/// ```
+///
 /// # CSR vs SSR vs Hydrate
 ///
-/// | Model | Server | Client | State Transfer |
-/// |-------|--------|--------|----------------|
-/// | CSR | None | `mount_csr_store()` | None needed |
-/// | SSR | `provide_store()` | `provide_store()` | Fresh state |
-/// | Hydrate | `provide_hydrated_store()` | `use_hydrated_store()` | JSON in HTML |
+/// | Model | Server | Client | State Transfer | Serde Required |
+/// |-------|--------|--------|----------------|----------------|
+/// | CSR | None | `mount_csr_store()` | None needed | No |
+/// | SSR | `provide_store()` | `provide_store()` | Fresh state | No |
+/// | Hydrate | `provide_hydrated_store()` | `use_hydrated_store()` | JSON in HTML | Yes |
 #[cfg(feature = "csr")]
 #[cfg_attr(docsrs, doc(cfg(feature = "csr")))]
 pub fn mount_csr_store<S: Store + Clone + Send + Sync + 'static>(store: S) {

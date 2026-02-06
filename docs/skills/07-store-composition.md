@@ -139,6 +139,8 @@ assert!(cart.auth.is_resolved());
 
 ### MultiStoreSelector — Cross-Store Derived Values
 
+> **Cache invalidation:** `MultiStoreSelector` and `DerivedView` are the primary cross-store cache invalidation mechanism — they use `Memo<T>` which auto-recomputes when any source signal changes. No manual invalidation needed. For side-effect-based invalidation (API refetches, external cache clearing), see [10-cache-invalidation.md](10-cache-invalidation.md).
+
 Combine state from 2 or 3 stores into a single reactive `Memo<T>`:
 
 ```rust
@@ -251,3 +253,4 @@ view! { <p>{move || view.get()}</p> }
 - [01-creating-a-store.md](01-creating-a-store.md) — Individual store definition
 - [06-selectors.md](06-selectors.md) — Single-store selectors and combine_selectors
 - [08-middleware.md](08-middleware.md) — Cross-store coordination via EventBus
+- [10-cache-invalidation.md](10-cache-invalidation.md) — Cross-store reactive updates, dependency graphs, cascading invalidation

@@ -23,6 +23,8 @@ specific pattern skill for targeted questions.
 6. [06-selectors.md](06-selectors.md) — Fine-grained Memo-based reactivity
 7. [07-store-composition.md](07-store-composition.md) — RootStore, CompositeStore patterns
 8. [08-middleware.md](08-middleware.md) — Audit trails, event bus, coordination
+9. [09-csr-deployment.md](09-csr-deployment.md) — Client-only SPA deployment with trunk
+10. [10-cache-invalidation.md](10-cache-invalidation.md) — Cross-store reactive cache invalidation
 
 ### Diagnostics
 - [troubleshooting.md](troubleshooting.md) — All common errors indexed by symptom
