@@ -4,3 +4,7 @@ docs/
 dist/
 secret/
 .worktrees/
+worker/node_modules/
+.env
+.env.local
+.dev.vars
