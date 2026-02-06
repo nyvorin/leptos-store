@@ -9,7 +9,8 @@
         deps audit outdated help examples-list run showcase build-example build-example-release \
         test-example-pkg check-example clean-example test-all-examples \
         check-all-examples clean-all-examples \
-        showcase-css showcase-dev showcase-build docker-build docker-run docker
+        showcase-css showcase-dev showcase-build docker-build docker-run docker \
+        deploy-dev deploy-prod deploy-setup
 
 # Colors for terminal output
 CYAN := \033[36m
@@ -258,6 +259,39 @@ docker-run:
 
 ## Build and run Docker container
 docker: docker-build docker-run
+
+# ============================================================================
+# Cloudflare Containers Deployment
+# ============================================================================
+# Requires: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID env vars
+# (or set in worker/.dev.vars)
+#
+# To use your personal Cloudflare account instead of global wrangler login:
+#   1. Go to https://dash.cloudflare.com/profile/api-tokens → Create Token
+#   2. Use "Edit Cloudflare Workers" template (add Containers permission)
+#   3. export CLOUDFLARE_API_TOKEN=<your-token>
+#   4. export CLOUDFLARE_ACCOUNT_ID=<your-account-id>
+# ============================================================================
+
+## Install worker dependencies
+deploy-setup:
+	@echo "$(CYAN)Installing worker dependencies...$(RESET)"
+	cd worker && npm install
+	@echo "$(GREEN)Worker dependencies installed$(RESET)"
+
+## Deploy showcase to Cloudflare (dev environment)
+deploy-dev: deploy-setup
+	@echo "$(CYAN)Deploying showcase to Cloudflare (dev)...$(RESET)"
+	@set -a && [ -f worker/.env ] && . worker/.env; set +a; \
+		cd worker && npx wrangler deploy
+	@echo "$(GREEN)Dev deployment complete$(RESET)"
+
+## Deploy showcase to Cloudflare (production environment)
+deploy-prod: deploy-setup
+	@echo "$(CYAN)Deploying showcase to Cloudflare (production)...$(RESET)"
+	@set -a && [ -f worker/.env ] && . worker/.env; set +a; \
+		cd worker && npx wrangler deploy --env production
+	@echo "$(GREEN)Production deployment complete$(RESET)"
 
 ## Build an example by name (SSR mode)
 ## Usage: make build-example NAME=token-explorer-example
@@ -679,6 +713,11 @@ help:
 	@echo "  docker-build     Build Docker image"
 	@echo "  docker-run       Run Docker container on :8080"
 	@echo "  docker           Build + run Docker container"
+	@echo ""
+	@echo "$(GREEN)Cloudflare Deploy:$(RESET)"
+	@echo "  deploy-setup     Install worker dependencies"
+	@echo "  deploy-dev       Deploy to Cloudflare (dev)"
+	@echo "  deploy-prod      Deploy to Cloudflare (production)"
 	@echo ""
 	@echo "$(GREEN)Examples (Generic - use NAME=<example>):$(RESET)"
 	@echo "  examples-list        List all available examples"
