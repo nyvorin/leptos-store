@@ -452,7 +452,9 @@ impl StoreDependencyGraph {
         let dep_id = dependency.id();
 
         self.names.entry(source_id).or_insert_with(|| source.name());
-        self.names.entry(dep_id).or_insert_with(|| dependency.name());
+        self.names
+            .entry(dep_id)
+            .or_insert_with(|| dependency.name());
 
         // Ensure both nodes exist in the graph
         self.edges.entry(dep_id).or_default();
