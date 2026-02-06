@@ -333,10 +333,7 @@ impl RootStoreBuilder {
     ///     .with_store_after::<_, AuthStore>(CartStore::new())  // cart after auth
     ///     .build();
     /// ```
-    pub fn with_store_after<S: Store + 'static, Dep: Store + 'static>(
-        mut self,
-        store: S,
-    ) -> Self {
+    pub fn with_store_after<S: Store + 'static, Dep: Store + 'static>(mut self, store: S) -> Self {
         let store_type = TypeId::of::<S>();
         let dep_type = TypeId::of::<Dep>();
 
