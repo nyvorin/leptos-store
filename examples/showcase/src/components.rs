@@ -6,9 +6,11 @@
 use leptos::prelude::*;
 use leptos_meta::*;
 use leptos_router::components::*;
+use leptos_router::hooks::use_navigate;
 use leptos_router::path;
 use leptos_store::provide_store;
 
+use crate::demos;
 use crate::showcase_store::{Difficulty, EXAMPLES, ExampleCategory, ExampleInfo, ShowcaseStore};
 
 /// Global styles
@@ -18,7 +20,7 @@ const GLOBAL_STYLES: &str = r#"
         padding: 0;
         box-sizing: border-box;
     }
-    
+
     :root {
         --bg-primary: #0f172a;
         --bg-secondary: #1e293b;
@@ -33,7 +35,7 @@ const GLOBAL_STYLES: &str = r#"
         --warning: #eab308;
         --error: #ef4444;
     }
-    
+
     body {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         background: var(--bg-primary);
@@ -41,49 +43,49 @@ const GLOBAL_STYLES: &str = r#"
         line-height: 1.6;
         min-height: 100vh;
     }
-    
+
     a {
         color: inherit;
         text-decoration: none;
     }
-    
+
     button {
         font-family: inherit;
     }
-    
+
     ::selection {
         background: var(--accent);
         color: white;
     }
-    
+
     ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
     }
-    
+
     ::-webkit-scrollbar-track {
         background: var(--bg-secondary);
     }
-    
+
     ::-webkit-scrollbar-thumb {
         background: var(--bg-tertiary);
         border-radius: 4px;
     }
-    
+
     ::-webkit-scrollbar-thumb:hover {
         background: var(--text-muted);
     }
-    
+
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
-    
+
     @keyframes pulse {
         0%, 100% { opacity: 1; }
         50% { opacity: 0.5; }
     }
-    
+
     @keyframes shimmer {
         0% { background-position: -200% 0; }
         100% { background-position: 200% 0; }
@@ -108,8 +110,90 @@ pub fn App() -> impl IntoView {
         <Router>
             <Routes fallback=|| "Page not found">
                 <Route path=path!("/") view=HomePage />
+                <Route path=path!("/counter") view=|| view! {
+                    <ExampleWrapper title="Counter" id="counter">
+                        <demos::CounterDemo />
+                    </ExampleWrapper>
+                } />
+                <Route path=path!("/auth") view=|| view! {
+                    <ExampleWrapper title="Auth Store" id="auth-store">
+                        <demos::AuthDemo />
+                    </ExampleWrapper>
+                } />
+                <Route path=path!("/token-explorer") view=|| view! {
+                    <ExampleWrapper title="Token Explorer" id="token-explorer">
+                        <demos::TokenExplorerDemo />
+                    </ExampleWrapper>
+                } />
+                <Route path=path!("/middleware") view=|| view! {
+                    <ExampleWrapper title="Middleware" id="middleware">
+                        <demos::MiddlewareDemo />
+                    </ExampleWrapper>
+                } />
+                <Route path=path!("/persistence") view=|| view! {
+                    <ExampleWrapper title="Persistence" id="persistence">
+                        <demos::PersistenceDemo />
+                    </ExampleWrapper>
+                } />
+                <Route path=path!("/composition") view=|| view! {
+                    <ExampleWrapper title="Composition" id="composition">
+                        <demos::CompositionDemo />
+                    </ExampleWrapper>
+                } />
+                <Route path=path!("/feature-flags") view=|| view! {
+                    <ExampleWrapper title="Feature Flags" id="feature-flags">
+                        <demos::FeatureFlagsDemo />
+                    </ExampleWrapper>
+                } />
+                <Route path=path!("/devtools") view=|| view! {
+                    <ExampleWrapper title="DevTools" id="devtools">
+                        <demos::DevtoolsDemo />
+                    </ExampleWrapper>
+                } />
+                <Route path=path!("/csr") view=|| view! {
+                    <ExampleWrapper title="CSR Todo" id="csr">
+                        <demos::CsrDemo />
+                    </ExampleWrapper>
+                } />
+                <Route path=path!("/selectors") view=|| view! {
+                    <ExampleWrapper title="Selectors" id="selectors">
+                        <demos::SelectorsDemo />
+                    </ExampleWrapper>
+                } />
             </Routes>
         </Router>
+    }
+}
+
+/// Wrapper component for individual example pages.
+///
+/// Provides a header with back-to-gallery link, title, and CSS scoping
+/// via `.demo-{id}` wrapper div.
+#[component]
+fn ExampleWrapper(title: &'static str, id: &'static str, children: Children) -> impl IntoView {
+    let store = use_context::<ShowcaseStore>().expect("ShowcaseStore not found");
+    store.mark_visited(id);
+
+    let wrapper_class = format!("demo-{id}");
+
+    view! {
+        <div style="min-height: 100vh; display: flex; flex-direction: column;">
+            <header style="background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 16px;">
+                <a
+                    href="/"
+                    style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 0.9rem; transition: color 0.2s;"
+                >
+                    <span>"← Gallery"</span>
+                </a>
+                <span style="color: var(--border);">"|"</span>
+                <h1 style="font-size: 1.1rem; font-weight: 600;">{title}</h1>
+            </header>
+            <main style="flex: 1;">
+                <div class=wrapper_class>
+                    {children()}
+                </div>
+            </main>
+        </div>
     }
 }
 
@@ -188,13 +272,13 @@ fn Header() -> impl IntoView {
                     <span style="font-size: 28px;">"🏪"</span>
                     <div>
                         <h1 style="font-size: 1.25rem; font-weight: 600; line-height: 1.2;">"leptos-store"</h1>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);">"v0.2.0"</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">"v0.6.1"</span>
                     </div>
                 </div>
 
                 <nav style="display: flex; align-items: center; gap: 24px;">
                     <a
-                        href="https://github.com/webmech/leptos-store"
+                        href="https://github.com/web-mech/leptos-store"
                         target="_blank"
                         style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary); transition: color 0.2s;"
                     >
@@ -316,12 +400,12 @@ fn FilterBar() -> impl IntoView {
     }
 }
 
-/// Example card component
+/// Example card component — navigates to internal route on click
 #[component]
 fn ExampleCard(example: &'static ExampleInfo, store: ShowcaseStore) -> impl IntoView {
     let is_hovered = RwSignal::new(false);
-    let url = format!("http://127.0.0.1:{}", example.port);
-    let url2 = url.clone();
+    let navigate = use_navigate();
+    let route = example.route;
     let example_id = example.id.to_string();
 
     let is_visited = {
@@ -342,15 +426,10 @@ fn ExampleCard(example: &'static ExampleInfo, store: ShowcaseStore) -> impl Into
             on:click={
                 let store = store.clone();
                 let id = example_id.clone();
-                let url = url2.clone();
+                let navigate = navigate.clone();
                 move |_| {
                     store.mark_visited(&id);
-                    // Open in new tab (only works in WASM)
-                    #[cfg(target_arch = "wasm32")]
-                    let _ = web_sys::window()
-                        .and_then(|w| w.open_with_url_and_target(&url, "_blank").ok());
-                    #[cfg(not(target_arch = "wasm32"))]
-                    let _ = &url; // Silence unused variable warning on SSR
+                    navigate(route, Default::default());
                 }
             }
         >
@@ -394,10 +473,10 @@ fn ExampleCard(example: &'static ExampleInfo, store: ShowcaseStore) -> impl Into
                 }).collect_view()}
             </div>
 
-            // Port info and launch button
+            // Route info and launch button
             <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid var(--border);">
                 <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-muted);">
-                    {format!("localhost:{}", example.port)}
+                    {example.route}
                 </span>
                 <div style=move || format!(
                     "display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: {}; border-radius: 8px; font-size: 0.875rem; font-weight: 500; transition: background 0.2s;",
@@ -465,7 +544,7 @@ fn Footer() -> impl IntoView {
                     <a href="https://crates.io/crates/leptos-store" target="_blank" style="color: var(--text-muted); font-size: 0.875rem; transition: color 0.2s;">
                         "Crates.io"
                     </a>
-                    <a href="https://github.com/webmech/leptos-store/issues" target="_blank" style="color: var(--text-muted); font-size: 0.875rem; transition: color 0.2s;">
+                    <a href="https://github.com/web-mech/leptos-store/issues" target="_blank" style="color: var(--text-muted); font-size: 0.875rem; transition: color 0.2s;">
                         "Report Issue"
                     </a>
                 </div>

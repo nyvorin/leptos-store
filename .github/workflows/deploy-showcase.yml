@@ -1,0 +1,39 @@
+name: Deploy Showcase
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "examples/**"
+      - "src/**"
+      - "worker/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "Dockerfile"
+      - ".github/workflows/deploy-showcase.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install worker dependencies
+        working-directory: worker
+        run: npm install
+
+      - name: Deploy to Cloudflare Containers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
+          command: deploy --env production

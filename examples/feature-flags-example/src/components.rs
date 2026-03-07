@@ -15,6 +15,27 @@ use leptos_store::templates::feature_flags::{
     Feature, FeatureFlag, FeatureFlagStore, FeatureVariant,
 };
 
+/// Embeddable demo component for the showcase.
+///
+/// Creates a FeatureFlagStore with default flags and renders the landing page.
+#[component]
+pub fn Demo() -> impl IntoView {
+    #[cfg(any(feature = "hydrate", feature = "ssr"))]
+    {
+        let flags = FeatureFlagStore::new();
+        flags.set_flags(vec![
+            FeatureFlag::new("dark_mode", true),
+            FeatureFlag::new("beta_features", false),
+            FeatureFlag::new("new_hero", true),
+            FeatureFlag::with_variant("hero_style", true, "modern"),
+            FeatureFlag::new("premium_content", false),
+        ]);
+        provide_context(flags);
+    }
+
+    view! { <LandingPage /> }
+}
+
 /// Main app component
 #[component]
 pub fn App() -> impl IntoView {
@@ -112,7 +133,7 @@ fn FlagControls() -> impl IntoView {
                                                 type="checkbox"
                                                 checked=flag.enabled
                                                 on:change=move |_| {
-                                                    flags_t.toggle_flag(&flag_key);
+                                                    flags_t.toggle(&flag_key);
                                                 }
                                             />
                                             <span class="toggle-slider"></span>

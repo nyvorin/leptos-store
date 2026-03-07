@@ -16,6 +16,16 @@ use leptos_store::prelude::*;
 
 use crate::counter_store::CounterStore;
 
+/// Embeddable demo component for the showcase.
+///
+/// Sets up the store and renders the counter UI without Router/MetaContext.
+#[component]
+pub fn Demo() -> impl IntoView {
+    let store = CounterStore::new();
+    provide_store(store);
+    view! { <CounterPage /> }
+}
+
 /// Main app component
 #[component]
 pub fn App() -> impl IntoView {

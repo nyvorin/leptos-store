@@ -13,6 +13,23 @@ use leptos_store::composition::{RootStore, provide_root_store, use_root_store};
 
 use crate::stores::{AuthStore, CartStore, NotificationType, UiStore};
 
+/// Embeddable demo component for the showcase.
+///
+/// Composes multiple stores into a RootStore and renders the dashboard.
+#[component]
+pub fn Demo() -> impl IntoView {
+    let auth_store = AuthStore::new();
+    let cart_store = CartStore::new();
+    let ui_store = UiStore::new();
+    let root = RootStore::builder()
+        .with_store(auth_store)
+        .with_store(cart_store)
+        .with_store(ui_store)
+        .build();
+    provide_root_store(root);
+    view! { <DashboardPage /> }
+}
+
 /// Main app component
 #[component]
 pub fn App() -> impl IntoView {

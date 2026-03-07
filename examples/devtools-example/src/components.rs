@@ -16,6 +16,31 @@ use leptos_store::devtools::{DevtoolsConfig, StoreInspector, init_devtools, regi
 
 use crate::counter_store::CounterStore;
 
+/// Embeddable demo component for the showcase.
+///
+/// Initializes devtools, registers the store, and renders the devtools page.
+#[component]
+pub fn Demo() -> impl IntoView {
+    #[cfg(feature = "hydrate")]
+    {
+        init_devtools(DevtoolsConfig::default());
+    }
+
+    let store = CounterStore::new();
+
+    #[cfg(feature = "hydrate")]
+    {
+        register_store_json(&store, "counter");
+    }
+
+    provide_store(store);
+
+    view! {
+        <DevtoolsPage />
+        <DevtoolsInspector />
+    }
+}
+
 /// Main app component
 #[component]
 pub fn App() -> impl IntoView {

@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "name": "leptos-store-showcase",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "deploy:production": "wrangler deploy --env production",
+    "dev": "wrangler dev"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "^0.1.0"
+  }
+}

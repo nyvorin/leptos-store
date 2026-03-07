@@ -91,6 +91,16 @@ store! {
 // App component
 // ============================================================================
 
+/// Embeddable demo component for the showcase.
+///
+/// Sets up the DashboardStore and renders the dashboard with selector panels.
+#[component]
+pub fn Demo() -> impl IntoView {
+    let store = DashboardStore::new();
+    provide_store(store);
+    view! { <DashboardPage /> }
+}
+
 /// Main app component
 #[component]
 pub fn App() -> impl IntoView {
@@ -325,7 +335,7 @@ fn FilteredCartPanel() -> impl IntoView {
 // ============================================================================
 
 /// Hydration entry point - called on the client to hydrate the SSR HTML
-#[cfg(feature = "hydrate")]
+#[cfg(all(feature = "hydrate", feature = "wasm_entry"))]
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub fn hydrate() {
     console_error_panic_hook::set_once();
@@ -333,7 +343,7 @@ pub fn hydrate() {
 }
 
 /// CSR entry point - mounts the app directly (no SSR)
-#[cfg(feature = "csr")]
+#[cfg(all(feature = "csr", feature = "wasm_entry"))]
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
 pub fn main() {
     console_error_panic_hook::set_once();

@@ -37,7 +37,8 @@ gloo-timers = { version = "0.3", features = ["futures"], optional = true }
 web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlScriptElement"], optional = true }
 
 [features]
-default = []
+default = ["wasm_entry"]
+wasm_entry = []
 ssr = [
     "dep:actix-files",
     "dep:actix-web",
@@ -77,7 +78,7 @@ site-addr = "127.0.0.1:3005"
 reload-port = 3006
 style-file = "style/main.css"
 bin-features = ["ssr"]
-lib-features = ["hydrate"]
+lib-features = ["hydrate", "wasm_entry"]
 hash-files = false
 lib-profile-release = "release"
 bin-profile-release = "release"
