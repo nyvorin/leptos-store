@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2026 web-mech
+// Copyright 2026 nyvorin
 
 //! Showcase components for displaying all leptos-store examples.
 
@@ -11,7 +11,7 @@ use leptos_router::path;
 use leptos_store::provide_store;
 
 use crate::demos;
-use crate::showcase_store::{Difficulty, EXAMPLES, ExampleCategory, ExampleInfo, ShowcaseStore};
+use crate::showcase_store::{Difficulty, ExampleCategory, ExampleInfo, ShowcaseStore};
 
 /// Global styles
 const GLOBAL_STYLES: &str = r#"
@@ -22,26 +22,26 @@ const GLOBAL_STYLES: &str = r#"
     }
 
     :root {
-        --bg-primary: #0f172a;
-        --bg-secondary: #1e293b;
-        --bg-tertiary: #334155;
-        --text-primary: #f8fafc;
-        --text-secondary: #94a3b8;
-        --text-muted: #64748b;
-        --accent: #3b82f6;
-        --accent-hover: #2563eb;
-        --border: #334155;
-        --success: #22c55e;
-        --warning: #eab308;
-        --error: #ef4444;
+        --bg: #09090b;
+        --bg-card: rgba(255,255,255,0.03);
+        --border: rgba(255,255,255,0.06);
+        --border-hover: rgba(255,255,255,0.12);
+        --text-primary: #fafafa;
+        --text-secondary: rgba(255,255,255,0.4);
+        --text-muted: rgba(255,255,255,0.25);
+        --accent-core: #818cf8;
+        --accent-state: #c084fc;
+        --accent-advanced: #fbbf24;
+        --accent-integration: #34d399;
     }
 
     body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background: var(--bg-primary);
+        font-family: Inter, -apple-system, 'SF Pro Display', system-ui, sans-serif;
+        background: var(--bg);
         color: var(--text-primary);
         line-height: 1.6;
         min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
     }
 
     a {
@@ -54,43 +54,119 @@ const GLOBAL_STYLES: &str = r#"
     }
 
     ::selection {
-        background: var(--accent);
+        background: #818cf8;
         color: white;
     }
 
     ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+        width: 6px;
+        height: 6px;
     }
 
     ::-webkit-scrollbar-track {
-        background: var(--bg-secondary);
+        background: transparent;
     }
 
     ::-webkit-scrollbar-thumb {
-        background: var(--bg-tertiary);
-        border-radius: 4px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 3px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-        background: var(--text-muted);
+        background: rgba(255,255,255,0.15);
     }
 
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
-
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
-    }
-
-    @keyframes shimmer {
-        0% { background-position: -200% 0; }
-        100% { background-position: 200% 0; }
-    }
 "#;
+
+/// Render an SVG icon based on example id
+fn render_icon(id: &str, color: &str) -> impl IntoView {
+    match id {
+        "counter" => view! {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke=color stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+        }
+        .into_any(),
+        "auth-store" => view! {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke=color stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+        }
+        .into_any(),
+        "token-explorer" => view! {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke=color stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="9" r="7" />
+                <circle cx="15" cy="15" r="7" />
+            </svg>
+        }
+        .into_any(),
+        "middleware" => view! {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke=color stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+            </svg>
+        }
+        .into_any(),
+        "persistence" => view! {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke=color stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+            </svg>
+        }
+        .into_any(),
+        "composition" => view! {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke=color stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+        }
+        .into_any(),
+        "feature-flags" => view! {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke=color stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                <line x1="4" y1="22" x2="4" y2="15" />
+            </svg>
+        }
+        .into_any(),
+        "devtools" => view! {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke=color stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+            </svg>
+        }
+        .into_any(),
+        "csr" => view! {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke=color stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <polyline points="9 11 12 14 22 4" />
+            </svg>
+        }
+        .into_any(),
+        "selectors" => view! {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke=color stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="6" />
+                <circle cx="12" cy="12" r="2" />
+            </svg>
+        }
+        .into_any(),
+        _ => view! {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke=color stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+            </svg>
+        }
+        .into_any(),
+    }
+}
 
 /// Main application component
 #[component]
@@ -104,7 +180,7 @@ pub fn App() -> impl IntoView {
     view! {
         <Stylesheet id="leptos" href="/pkg/showcase.css"/>
         <Style>{GLOBAL_STYLES}</Style>
-        <Title text="Leptos Store - Examples Showcase"/>
+        <Title text="leptos-store — Examples Showcase"/>
         <Meta name="description" content="Explore all leptos-store examples in one place"/>
 
         <Router>
@@ -177,16 +253,20 @@ fn ExampleWrapper(title: &'static str, id: &'static str, children: Children) -> 
     let wrapper_class = format!("demo-{id}");
 
     view! {
-        <div style="min-height: 100vh; display: flex; flex-direction: column;">
-            <header style="background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 16px;">
+        <div style="min-height: 100vh; display: flex; flex-direction: column; background: var(--bg);">
+            <header style="background: rgba(9,9,11,0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); height: 56px; display: flex; align-items: center; padding: 0 24px; gap: 16px; position: sticky; top: 0; z-index: 100;">
                 <a
                     href="/"
-                    style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 0.9rem; transition: color 0.2s;"
+                    style="display: flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 13px; transition: color 0.2s;"
                 >
-                    <span>"← Gallery"</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 12H5" />
+                        <path d="M12 19l-7-7 7-7" />
+                    </svg>
+                    <span>"Gallery"</span>
                 </a>
                 <span style="color: var(--border);">"|"</span>
-                <h1 style="font-size: 1.1rem; font-weight: 600;">{title}</h1>
+                <h1 style="font-size: 14px; font-weight: 600;">{title}</h1>
             </header>
             <main style="flex: 1;">
                 <div class=wrapper_class>
@@ -208,42 +288,32 @@ fn HomePage() -> impl IntoView {
         <div style="min-height: 100vh; display: flex; flex-direction: column;">
             <Header />
 
-            <main style="flex: 1; max-width: 1400px; margin: 0 auto; padding: 40px 24px; width: 100%;">
+            <main style="flex: 1; max-width: 1200px; margin: 0 auto; padding: 0 32px; width: 100%;">
                 // Hero section
-                <section style="text-align: center; margin-bottom: 60px;">
-                    <h1 style="font-size: 3.5rem; font-weight: 700; margin-bottom: 16px; background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                        "Leptos Store Examples"
-                    </h1>
-                    <p style="font-size: 1.25rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto 32px;">
-                        "Explore state management patterns, from basic counters to advanced middleware and devtools integration."
-                    </p>
+                <section style="position: relative; text-align: center; padding: 80px 0 48px;">
+                    // Radial indigo glow
+                    <div style="position: absolute; top: -100px; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: radial-gradient(ellipse, rgba(99,102,241,0.15) 0%, transparent 70%); pointer-events: none;" />
 
-                    // Stats
-                    <div style="display: flex; justify-content: center; gap: 48px; margin-bottom: 32px;">
-                        <StatItem
-                            value=move || EXAMPLES.len().to_string()
-                            label="Examples"
-                            icon="📚"
-                        />
-                        <StatItem
-                            value=move || store.visit_count().to_string()
-                            label="Visited"
-                            icon="✅"
-                        />
-                        <StatItem
-                            value=move || "4".to_string()
-                            label="Categories"
-                            icon="📂"
-                        />
+                    // Status pill
+                    <div style="position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 20px; border: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 24px;">
+                        <div style="width: 6px; height: 6px; border-radius: 50%; background: #22c55e;" />
+                        "10 Interactive Examples"
                     </div>
+
+                    <h1 style="position: relative; font-size: 48px; font-weight: 700; letter-spacing: -0.04em; margin-bottom: 16px; color: var(--text-primary);">
+                        "leptos-store"
+                    </h1>
+                    <p style="position: relative; font-size: 18px; color: var(--text-muted); max-width: 500px; margin: 0 auto;">
+                        "Enterprise-grade state management for Leptos"
+                    </p>
                 </section>
 
-                // Filters
-                <FilterBar />
+                // Segmented control
+                <SegmentedControl />
 
                 // Examples grid
-                <section style="margin-top: 32px;">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px;">
+                <section style="margin-top: 24px; margin-bottom: 48px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px;">
                         {move || {
                             store2.get_filtered_examples()
                                 .into_iter()
@@ -266,33 +336,30 @@ fn HomePage() -> impl IntoView {
 #[component]
 fn Header() -> impl IntoView {
     view! {
-        <header style="background: var(--bg-secondary); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(8px);">
-            <div style="max-width: 1400px; margin: 0 auto; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="font-size: 28px;">"🏪"</span>
-                    <div>
-                        <h1 style="font-size: 1.25rem; font-weight: 600; line-height: 1.2;">"leptos-store"</h1>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);">"v0.6.1"</span>
-                    </div>
+        <header style="background: rgba(9,9,11,0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;">
+            <div style="max-width: 1200px; margin: 0 auto; padding: 0 32px; height: 56px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 15px; font-weight: 600; color: var(--text-primary);">"leptos-store"</span>
+                    <span style="font-size: 11px; color: var(--text-muted); background: rgba(255,255,255,0.04); padding: 2px 8px; border-radius: 6px;">
+                        {format!("v{}", env!("CARGO_PKG_VERSION"))}
+                    </span>
                 </div>
 
-                <nav style="display: flex; align-items: center; gap: 24px;">
+                <nav style="display: flex; align-items: center; gap: 20px;">
                     <a
-                        href="https://github.com/web-mech/leptos-store"
+                        href="https://github.com/nyvorin/leptos-store"
                         target="_blank"
-                        style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary); transition: color 0.2s;"
+                        style="display: flex; align-items: center; color: var(--text-secondary); transition: color 0.2s;"
                     >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                         </svg>
-                        "GitHub"
                     </a>
                     <a
                         href="https://docs.rs/leptos-store"
                         target="_blank"
-                        style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary); transition: color 0.2s;"
+                        style="font-size: 13px; color: var(--text-secondary); transition: color 0.2s;"
                     >
-                        <span>"📖"</span>
                         "Docs"
                     </a>
                 </nav>
@@ -301,28 +368,10 @@ fn Header() -> impl IntoView {
     }
 }
 
-/// Stat item component
+/// Segmented control for category filtering (replaces FilterBar)
 #[component]
-fn StatItem<F>(value: F, label: &'static str, icon: &'static str) -> impl IntoView
-where
-    F: Fn() -> String + Send + Sync + 'static,
-{
-    view! {
-        <div style="text-align: center;">
-            <div style="font-size: 2rem; margin-bottom: 4px;">{icon}</div>
-            <div style="font-size: 2rem; font-weight: 700; color: var(--accent);">{value}</div>
-            <div style="font-size: 0.875rem; color: var(--text-muted);">{label}</div>
-        </div>
-    }
-}
-
-/// Filter bar component
-#[component]
-fn FilterBar() -> impl IntoView {
+fn SegmentedControl() -> impl IntoView {
     let store = use_context::<ShowcaseStore>().expect("ShowcaseStore not found");
-    let store2 = store.clone();
-
-    let search_query = RwSignal::new(String::new());
     let active_category = RwSignal::new(Option::<String>::None);
 
     let categories = [
@@ -333,36 +382,19 @@ fn FilterBar() -> impl IntoView {
     ];
 
     view! {
-        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; padding: 20px 24px; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border);">
-            // Search input
-            <div style="flex: 1; min-width: 250px; position: relative;">
-                <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">
-                    "🔍"
-                </span>
-                <input
-                    type="text"
-                    placeholder="Search examples..."
-                    style="width: 100%; padding: 12px 12px 12px 44px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 0.95rem; outline: none; transition: border-color 0.2s;"
-                    prop:value=move || search_query.get()
-                    on:input=move |ev| {
-                        let value = event_target_value(&ev);
-                        search_query.set(value.clone());
-                        store.set_search_query(value);
-                    }
-                />
-            </div>
-
-            // Category filters
-            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <div style="display: flex; justify-content: center; margin-bottom: 8px;">
+            <div style="display: inline-flex; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 3px;">
                 {
-                    let store_all = store2.clone();
+                    let store_all = store.clone();
                     view! {
                         <button
                             style=move || format!(
-                                "padding: 8px 16px; border-radius: 20px; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s; border: 1px solid {}; background: {}; color: {};",
-                                if active_category.get().is_none() { "var(--accent)" } else { "var(--border)" },
-                                if active_category.get().is_none() { "var(--accent)" } else { "transparent" },
-                                if active_category.get().is_none() { "white" } else { "var(--text-secondary)" }
+                                "padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s ease; {}",
+                                if active_category.get().is_none() {
+                                    "background: rgba(255,255,255,0.08); color: #fff;"
+                                } else {
+                                    "background: transparent; color: rgba(255,255,255,0.4);"
+                                }
                             )
                             on:click=move |_| {
                                 active_category.set(None);
@@ -375,16 +407,17 @@ fn FilterBar() -> impl IntoView {
                 }
 
                 {categories.into_iter().map(|cat| {
-                    let store = store2.clone();
+                    let store = store.clone();
                     let label = cat.label();
-                    let color = cat.color();
                     view! {
                         <button
                             style=move || format!(
-                                "padding: 8px 16px; border-radius: 20px; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s; border: 1px solid {}; background: {}; color: {};",
-                                if active_category.get().as_deref() == Some(label) { color } else { "var(--border)" },
-                                if active_category.get().as_deref() == Some(label) { color } else { "transparent" },
-                                if active_category.get().as_deref() == Some(label) { "white" } else { "var(--text-secondary)" }
+                                "padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s ease; {}",
+                                if active_category.get().as_deref() == Some(label) {
+                                    "background: rgba(255,255,255,0.08); color: #fff;"
+                                } else {
+                                    "background: transparent; color: rgba(255,255,255,0.4);"
+                                }
                             )
                             on:click=move |_| {
                                 active_category.set(Some(label.to_string()));
@@ -400,26 +433,21 @@ fn FilterBar() -> impl IntoView {
     }
 }
 
-/// Example card component — navigates to internal route on click
+/// Example card component
 #[component]
 fn ExampleCard(example: &'static ExampleInfo, store: ShowcaseStore) -> impl IntoView {
     let is_hovered = RwSignal::new(false);
     let navigate = use_navigate();
     let route = example.route;
     let example_id = example.id.to_string();
-
-    let is_visited = {
-        let store = store.clone();
-        let id = example.id.to_string();
-        move || store.is_visited(&id)
-    };
+    let color = example.category.color();
 
     view! {
         <article
             style=move || format!(
-                "position: relative; background: var(--bg-secondary); border-radius: 16px; padding: 24px; border: 1px solid {}; transition: all 0.3s ease; cursor: pointer; animation: fadeIn 0.4s ease-out; {}",
-                if is_hovered.get() { "var(--accent)" } else { "var(--border)" },
-                if is_hovered.get() { "transform: translateY(-4px); box-shadow: 0 20px 40px -15px rgba(59, 130, 246, 0.2);" } else { "" }
+                "background: var(--bg-card); border: 1px solid {}; border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.2s ease; animation: fadeIn 0.4s ease-out; {}",
+                if is_hovered.get() { "var(--border-hover)" } else { "var(--border)" },
+                if is_hovered.get() { "transform: translateY(-2px);" } else { "" }
             )
             on:mouseenter=move |_| is_hovered.set(true)
             on:mouseleave=move |_| is_hovered.set(false)
@@ -433,64 +461,62 @@ fn ExampleCard(example: &'static ExampleInfo, store: ShowcaseStore) -> impl Into
                 }
             }
         >
-            // Category badge
-            <div style=format!(
-                "position: absolute; top: 16px; right: 16px; padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; background: {}20; color: {};",
-                example.category.color(), example.category.color()
-            )>
-                {example.category.label()}
+            // Top row: icon + category pill
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                <div style=format!(
+                    "width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, {}15, {}08);",
+                    color, color
+                )>
+                    {render_icon(example.id, color)}
+                </div>
+                <span style=format!(
+                    "padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: 500; letter-spacing: 0.02em; background: {}12; color: {};",
+                    color, color
+                )>
+                    {example.category.label()}
+                </span>
             </div>
 
-            // Visited indicator
-            <Show when=is_visited>
-                <div style="position: absolute; top: 16px; left: 16px; width: 8px; height: 8px; background: var(--success); border-radius: 50%;" title="Visited" />
-            </Show>
-
-            // Icon and title
-            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-                <div style="width: 56px; height: 56px; background: var(--bg-tertiary); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 28px;">
-                    {example.icon}
-                </div>
-                <div>
-                    <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 4px;">{example.name}</h3>
-                    <DifficultyBadge difficulty=example.difficulty />
-                </div>
-            </div>
+            // Title
+            <h3 style="font-size: 15px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 6px; color: var(--text-primary);">
+                {example.name}
+            </h3>
 
             // Description
-            <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6; margin-bottom: 20px;">
+            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.55; margin-bottom: 16px;">
                 {example.description}
             </p>
 
-            // Features
-            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;">
+            // Feature tags
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px;">
                 {example.features.iter().map(|feature| {
                     view! {
-                        <span style="padding: 4px 10px; background: var(--bg-primary); border-radius: 6px; font-size: 0.8rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+                        <span style="padding: 3px 8px; background: rgba(255,255,255,0.04); border-radius: 5px; font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', ui-monospace, monospace;">
                             {*feature}
                         </span>
                     }
                 }).collect_view()}
             </div>
 
-            // Route info and launch button
-            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid var(--border);">
-                <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-muted);">
-                    {example.route}
-                </span>
-                <div style=move || format!(
-                    "display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: {}; border-radius: 8px; font-size: 0.875rem; font-weight: 500; transition: background 0.2s;",
-                    if is_hovered.get() { "var(--accent)" } else { "var(--bg-tertiary)" }
+            // Bottom divider + launch + difficulty
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 14px; border-top: 1px solid var(--border);">
+                <div style=format!(
+                    "display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: {};",
+                    color
                 )>
                     <span>"Launch"</span>
-                    <span style="font-size: 1rem;">"→"</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke=color stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14" />
+                        <path d="M12 5l7 7-7 7" />
+                    </svg>
                 </div>
+                <DifficultyBadge difficulty=example.difficulty />
             </div>
         </article>
     }
 }
 
-/// Difficulty badge component
+/// Difficulty badge component with dot indicators
 #[component]
 fn DifficultyBadge(difficulty: Difficulty) -> impl IntoView {
     let dots = match difficulty {
@@ -506,13 +532,17 @@ fn DifficultyBadge(difficulty: Difficulty) -> impl IntoView {
                     let active = i < dots;
                     view! {
                         <div style=format!(
-                            "width: 6px; height: 6px; border-radius: 50%; {}",
-                            if active { format!("background: {};", difficulty.color()) } else { "background: var(--bg-tertiary);".to_string() }
+                            "width: 5px; height: 5px; border-radius: 50%; {}",
+                            if active {
+                                format!("background: {};", difficulty.color())
+                            } else {
+                                "background: rgba(255,255,255,0.1);".to_string()
+                            }
                         ) />
                     }
                 }).collect_view()}
             </div>
-            <span style=format!("font-size: 0.75rem; color: {};", difficulty.color())>
+            <span style="font-size: 10px; color: var(--text-muted);">
                 {difficulty.label()}
             </span>
         </div>
@@ -523,29 +553,20 @@ fn DifficultyBadge(difficulty: Difficulty) -> impl IntoView {
 #[component]
 fn Footer() -> impl IntoView {
     view! {
-        <footer style="background: var(--bg-secondary); border-top: 1px solid var(--border); padding: 32px 24px; margin-top: auto;">
-            <div style="max-width: 1400px; margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 24px;">
-                <div>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem;">
-                        "Built with "
-                        <span style="color: var(--accent);">"Leptos"</span>
-                        " + "
-                        <span style="color: var(--accent);">"leptos-store"</span>
-                    </p>
-                    <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px;">
-                        "© 2026 web-mech. Apache-2.0 License."
-                    </p>
-                </div>
-
-                <div style="display: flex; gap: 24px;">
-                    <a href="https://leptos.dev" target="_blank" style="color: var(--text-muted); font-size: 0.875rem; transition: color 0.2s;">
+        <footer style="border-top: 1px solid var(--border); padding: 32px; margin-top: auto;">
+            <div style="max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+                <p style="font-size: 12px; color: var(--text-muted);">
+                    "\u{00A9} 2026 nyvorin. Apache-2.0 License."
+                </p>
+                <div style="display: flex; gap: 20px;">
+                    <a href="https://leptos.dev" target="_blank" style="font-size: 12px; color: var(--text-muted); transition: color 0.2s;">
                         "Leptos"
                     </a>
-                    <a href="https://crates.io/crates/leptos-store" target="_blank" style="color: var(--text-muted); font-size: 0.875rem; transition: color 0.2s;">
-                        "Crates.io"
+                    <a href="https://crates.io/crates/leptos-store" target="_blank" style="font-size: 12px; color: var(--text-muted); transition: color 0.2s;">
+                        "crates.io"
                     </a>
-                    <a href="https://github.com/web-mech/leptos-store/issues" target="_blank" style="color: var(--text-muted); font-size: 0.875rem; transition: color 0.2s;">
-                        "Report Issue"
+                    <a href="https://github.com/nyvorin/leptos-store/issues" target="_blank" style="font-size: 12px; color: var(--text-muted); transition: color 0.2s;">
+                        "Issues"
                     </a>
                 </div>
             </div>
