@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2026 web-mech
+// Copyright 2026 nyvorin
 
 //! Fine-grained selector system for reactive state slices.
 //!

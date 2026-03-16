@@ -341,7 +341,7 @@ fn Header() -> impl IntoView {
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 15px; font-weight: 600; color: var(--text-primary);">"leptos-store"</span>
                     <span style="font-size: 11px; color: var(--text-muted); background: rgba(255,255,255,0.04); padding: 2px 8px; border-radius: 6px;">
-                        {format!("v{}", env!("CARGO_PKG_VERSION"))}
+                        "v0.9.0"
                     </span>
                 </div>
 

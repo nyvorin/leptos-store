@@ -32,7 +32,7 @@ impl ExampleCategory {
     pub fn label(&self) -> &'static str {
         match self {
             Self::Core => "Core",
-            Self::State => "State Management",
+            Self::State => "State",
             Self::Advanced => "Advanced",
             Self::Integration => "Integration",
         }

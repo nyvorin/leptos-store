@@ -2,7 +2,7 @@
 name: leptos-store
 description: Enterprise-grade, type-enforced state management for Leptos (Rust). Use when implementing stores, getters, mutators, actions, selectors, persistence, SSR hydration, middleware, audit trails, or store composition in a Leptos application.
 metadata:
-  author: web-mech
+  author: nyvorin
   version: "0.7"
   framework: leptos
   language: rust
