@@ -6,7 +6,7 @@
 [![Documentation](https://img.shields.io/docsrs/leptos-store/latest)](https://docs.rs/leptos-store)
 [![License](https://img.shields.io/crates/l/leptos-store.svg)](LICENSE)
 
-**[Live Demo](https://leptos-store-showcase.webmech.workers.dev)** | **[API Docs](https://nyvorin.github.io/leptos-store)** | **[crates.io](https://crates.io/crates/leptos-store)**
+**[Live Demo](https://leptos-store.nyvorin.com)** | **[API Docs](https://nyvorin.github.io/leptos-store)** | **[crates.io](https://crates.io/crates/leptos-store)**
 
 ## Overview
 

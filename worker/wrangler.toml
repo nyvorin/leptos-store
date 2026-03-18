@@ -37,6 +37,9 @@ new_sqlite_classes = ["ShowcaseContainer"]
 # =============================================================================
 [env.production]
 name = "leptos-store-showcase"
+routes = [
+  { pattern = "leptos-store.nyvorin.com", custom_domain = true },
+]
 
 [[env.production.containers]]
 class_name = "ShowcaseContainer"
