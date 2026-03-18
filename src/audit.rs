@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2026 web-mech
+// Copyright 2026 nyvorin
 
 //! Audit trail system for tracking state mutation history.
 //!

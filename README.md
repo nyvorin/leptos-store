@@ -6,6 +6,8 @@
 [![Documentation](https://img.shields.io/docsrs/leptos-store/latest)](https://docs.rs/leptos-store)
 [![License](https://img.shields.io/crates/l/leptos-store.svg)](LICENSE)
 
+**[Live Demo](https://leptos-store-showcase.webmech.workers.dev)** | **[API Docs](https://nyvorin.github.io/leptos-store)** | **[crates.io](https://crates.io/crates/leptos-store)**
+
 ## Overview
 
 `leptos-store` provides a structured, SSR-safe state management architecture for [Leptos](https://leptos.dev), inspired by **Vuex** and **Pinia**, translated into idiomatic Rust.
@@ -737,7 +739,7 @@ We welcome contributions! See [`AUTHORING.md`](./AUTHORING.md) for:
 
 ```bash
 # Quick start for contributors
-git clone https://github.com/your-org/leptos-store.git
+git clone https://github.com/nyvorin/leptos-store.git
 cd leptos-store
 make check   # Verify setup
 make test    # Run tests

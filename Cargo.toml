@@ -4,14 +4,14 @@ version = "0.9.0"
 edition = "2024"
 rust-version = "1.92"
 description = "Enterprise-grade, type-enforced state management for Leptos"
-repository = "https://github.com/web-mech/leptos-store"
+repository = "https://github.com/nyvorin/leptos-store"
 documentation = "https://docs.rs/leptos-store"
-homepage = "https://github.com/web-mech/leptos-store"
+homepage = "https://github.com/nyvorin/leptos-store"
 keywords = ["leptos", "state-management", "reactive", "wasm", "ssr"]
 categories = ["web-programming", "wasm"]
 readme = "README.md"
 license = "Apache-2.0"
-authors = ["web-mech"]
+authors = ["nyvorin"]
 
 # Only include what's needed for the library
 # Note: Cargo.lock and .cargo_vcs_info.json are auto-added during packaging

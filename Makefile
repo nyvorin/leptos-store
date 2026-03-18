@@ -225,7 +225,17 @@ showcase-css:
 		if [ -f "$$css_file" ]; then \
 			echo "/* --- $$id --- */" >> examples/showcase/style/main.css; \
 			echo ".demo-$$id {" >> examples/showcase/style/main.css; \
-			cat "$$css_file" | sed 's/^/  /' >> examples/showcase/style/main.css; \
+			sed \
+				-e 's/^html, body {/\& {/' \
+				-e 's/^:root {/\& {/' \
+				-e 's/^:root,/\&,/' \
+				-e 's/^html {/\& {/' \
+				-e 's/^html,/\&,/' \
+				-e 's/^body {/\& {/' \
+				-e 's/^body,/\&,/' \
+				-e 's/^body::before/\&::before/' \
+				-e 's/^/  /' \
+				"$$css_file" >> examples/showcase/style/main.css; \
 			echo "" >> examples/showcase/style/main.css; \
 			echo "}" >> examples/showcase/style/main.css; \
 			echo "" >> examples/showcase/style/main.css; \

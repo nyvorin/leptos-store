@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2026 web-mech
+// Copyright 2026 nyvorin
 
 //! Showcase store for tracking user interactions and preferences.
 
@@ -14,8 +14,6 @@ pub struct ExampleInfo {
     pub id: &'static str,
     pub name: &'static str,
     pub description: &'static str,
-    pub icon: &'static str,
-    pub port: u16,
     pub route: &'static str,
     pub category: ExampleCategory,
     pub features: &'static [&'static str],
@@ -34,7 +32,7 @@ impl ExampleCategory {
     pub fn label(&self) -> &'static str {
         match self {
             Self::Core => "Core",
-            Self::State => "State Management",
+            Self::State => "State",
             Self::Advanced => "Advanced",
             Self::Integration => "Integration",
         }
@@ -42,10 +40,10 @@ impl ExampleCategory {
 
     pub fn color(&self) -> &'static str {
         match self {
-            Self::Core => "#3b82f6",
-            Self::State => "#8b5cf6",
-            Self::Advanced => "#f59e0b",
-            Self::Integration => "#10b981",
+            Self::Core => "#818cf8",
+            Self::State => "#c084fc",
+            Self::Advanced => "#fbbf24",
+            Self::Integration => "#34d399",
         }
     }
 }
@@ -81,8 +79,6 @@ pub const EXAMPLES: &[ExampleInfo] = &[
         id: "counter",
         name: "Counter",
         description: "Basic counter demonstrating store creation, state management, and reactive updates. The perfect starting point.",
-        icon: "🔢",
-        port: 3001,
         route: "/counter",
         category: ExampleCategory::Core,
         features: &["Store", "RwSignal", "Reactivity"],
@@ -92,8 +88,6 @@ pub const EXAMPLES: &[ExampleInfo] = &[
         id: "middleware",
         name: "Middleware",
         description: "Action middleware for logging, timing, and validation. Intercept mutations before and after they execute.",
-        icon: "🔗",
-        port: 3010,
         route: "/middleware",
         category: ExampleCategory::Advanced,
         features: &["Middleware", "Logging", "Timing", "Validation"],
@@ -103,8 +97,6 @@ pub const EXAMPLES: &[ExampleInfo] = &[
         id: "persistence",
         name: "Persistence",
         description: "Persist store state to localStorage or sessionStorage. Automatic save/load with versioning support.",
-        icon: "💾",
-        port: 3020,
         route: "/persistence",
         category: ExampleCategory::State,
         features: &["LocalStorage", "SessionStorage", "Versioning"],
@@ -114,8 +106,6 @@ pub const EXAMPLES: &[ExampleInfo] = &[
         id: "composition",
         name: "Composition",
         description: "Compose multiple stores together. Share state between stores and create complex state hierarchies.",
-        icon: "🧩",
-        port: 3030,
         route: "/composition",
         category: ExampleCategory::Advanced,
         features: &["Store Composition", "Shared State", "Computed"],
@@ -125,8 +115,6 @@ pub const EXAMPLES: &[ExampleInfo] = &[
         id: "feature-flags",
         name: "Feature Flags",
         description: "Runtime feature flags with percentage rollouts, user targeting, and A/B testing capabilities.",
-        icon: "🚩",
-        port: 3040,
         route: "/feature-flags",
         category: ExampleCategory::Integration,
         features: &["Feature Flags", "Rollouts", "A/B Testing"],
@@ -136,8 +124,6 @@ pub const EXAMPLES: &[ExampleInfo] = &[
         id: "devtools",
         name: "DevTools",
         description: "Built-in developer tools for inspecting store state, tracking events, and debugging state changes.",
-        icon: "🔧",
-        port: 3050,
         route: "/devtools",
         category: ExampleCategory::Advanced,
         features: &["Inspector", "Event Log", "State Diff"],
@@ -147,8 +133,6 @@ pub const EXAMPLES: &[ExampleInfo] = &[
         id: "auth-store",
         name: "Auth Store",
         description: "Authentication state management with login/logout flows, session handling, and protected routes.",
-        icon: "🔐",
-        port: 3000,
         route: "/auth",
         category: ExampleCategory::Integration,
         features: &["Authentication", "Sessions", "Protected Routes"],
@@ -158,8 +142,6 @@ pub const EXAMPLES: &[ExampleInfo] = &[
         id: "token-explorer",
         name: "Token Explorer",
         description: "Cryptocurrency token explorer with real-time data, pagination, and advanced filtering.",
-        icon: "🪙",
-        port: 3005,
         route: "/token-explorer",
         category: ExampleCategory::Integration,
         features: &["API Integration", "Pagination", "Filtering"],
@@ -169,8 +151,6 @@ pub const EXAMPLES: &[ExampleInfo] = &[
         id: "csr",
         name: "CSR Todo",
         description: "Client-side rendered todo app. No SSR, no hydration — pure browser state management.",
-        icon: "📋",
-        port: 3015,
         route: "/csr",
         category: ExampleCategory::Core,
         features: &["CSR", "store! macro", "Todo Pattern"],
@@ -180,8 +160,6 @@ pub const EXAMPLES: &[ExampleInfo] = &[
         id: "selectors",
         name: "Selectors",
         description: "Fine-grained reactivity with create_selector, combine_selectors, map_selector, and filter_selector.",
-        icon: "🎯",
-        port: 3013,
         route: "/selectors",
         category: ExampleCategory::State,
         features: &["Selectors", "Memoization", "Fine-grained Reactivity"],
@@ -196,10 +174,6 @@ pub struct ShowcaseState {
     pub visited: HashSet<String>,
     /// Currently selected category filter
     pub category_filter: Option<String>,
-    /// Search query
-    pub search_query: String,
-    /// Dark mode preference
-    pub dark_mode: bool,
 }
 
 /// Showcase store
@@ -217,10 +191,7 @@ impl Default for ShowcaseStore {
 impl ShowcaseStore {
     pub fn new() -> Self {
         Self {
-            state: RwSignal::new(ShowcaseState {
-                dark_mode: true, // Default to dark mode
-                ..Default::default()
-            }),
+            state: RwSignal::new(ShowcaseState::default()),
         }
     }
 
@@ -243,45 +214,18 @@ impl ShowcaseStore {
         });
     }
 
-    /// Set search query
-    pub fn set_search_query(&self, query: String) {
-        self.state.update(|s| {
-            s.search_query = query;
-        });
-    }
-
-    /// Toggle dark mode
-    pub fn toggle_dark_mode(&self) {
-        self.state.update(|s| {
-            s.dark_mode = !s.dark_mode;
-        });
-    }
-
     /// Get filtered examples
     pub fn get_filtered_examples(&self) -> Vec<&'static ExampleInfo> {
         let state = self.state.get();
-        let query = state.search_query.to_lowercase();
 
         EXAMPLES
             .iter()
             .filter(|e| {
-                // Category filter
                 if let Some(ref cat) = state.category_filter
                     && e.category.label() != cat
                 {
                     return false;
                 }
-
-                // Search filter
-                if !query.is_empty() {
-                    let matches = e.name.to_lowercase().contains(&query)
-                        || e.description.to_lowercase().contains(&query)
-                        || e.features.iter().any(|f| f.to_lowercase().contains(&query));
-                    if !matches {
-                        return false;
-                    }
-                }
-
                 true
             })
             .collect()
